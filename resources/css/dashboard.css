@@ -29150,4 +29150,185 @@ pre[class*=language-] {
   }
 }
 
-/*# sourceMappingURL=dashboard-free.css.map */
+/* Toast Container Styles */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.toast-item {
+    pointer-events: auto;
+    transform: translateX(400px);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    min-width: 320px;
+    max-width: 400px;
+}
+
+.toast-show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.toast-success {
+    background: linear-gradient(
+        135deg,
+        rgba(0, 0, 0, 0.8) 0%,
+        rgba(34, 197, 94, 0.3) 50%,
+        rgba(59, 130, 246, 0.3) 100%
+    );
+}
+
+.toast-error {
+    background: linear-gradient(
+        135deg,
+        rgba(0, 0, 0, 0.8) 0%,
+        rgba(239, 68, 68, 0.3) 50%,
+        rgba(59, 130, 246, 0.3) 100%
+    );
+}
+
+.toast-content {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    gap: 12px;
+}
+
+.toast-icon {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 16px;
+}
+
+.toast-message {
+    flex: 1;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+.toast-close {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.toast-close:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Loading spinner */
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* Animation keyframes */
+@keyframes slideInRight {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .toast-container {
+        left: 10px;
+        right: 10px;
+        top: 10px;
+    }
+
+    .toast-item {
+        min-width: auto;
+        max-width: none;
+        transform: translateY(-100px);
+    }
+
+    .toast-show {
+        transform: translateY(0);
+    }
+}
+.table-responsive .dropdown {
+    position: static !important;
+}
+
+/* Make dropdown menu appear properly even in scrollable containers */
+.table-responsive .dropdown-menu {
+    transform: translate3d(0px, 0px, 0px) !important;
+    will-change: auto !important;
+    z-index: 1050 !important; /* Ensure it's above other elements */
+    display: block !important; /* Optional: for some rare clipping cases */
+    visibility: visible !important;
+}
+
+/* Prevent table cells from wrapping */
+td, th {
+    white-space: nowrap !important;
+}
+
+/* Optional: make description or long text cells truncate */
+td .text-truncate, th .text-truncate {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 180px; /* You can customize this */
+    display: inline-block !important;
+    white-space: nowrap !important;
+    vertical-align: middle;
+}
+
+/* Optional: control column width more consistently */
+.table td,
+.table th {
+    vertical-align: middle !important;
+}
+
+/* Optional: Scroll fix for mobile */
+.table-responsive {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+}

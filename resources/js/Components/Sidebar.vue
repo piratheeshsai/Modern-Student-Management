@@ -102,19 +102,24 @@ export default {
     },
     data() {
         return {
-            appName: "Your App Name",
+            appName: "OCBTE",
             mainMenuItems: [
-                { name: "Dashboard", route: "/dashboard", icon: "dashboard" },
-                { name: "Tables", route: "/tables", icon: "table_view" },
-                { name: "Billing", route: "/billing", icon: "receipt_long" },
+                { name: "Dashboard", route: "/dashboard",
+                icon: "dashboard" },
+                { name: "Students", route: "/student",
+                icon: "dashboard" },
+                { name: "Courses", route: "/courses",
+                icon: "table_view" },
+                { name: "Payment", route: "/billing",
+                icon: "receipt_long" },
                 {
-                    name: "Virtual Reality",
-                    route: "/virtual-reality",
-                    icon: "view_in_ar",
+                    name: "Reports",
+                    route: "/reports",
+                    icon: "assignment",
                 },
                 {
-                    name: "RTL",
-                    route: "/rtl",
+                    name: "Branches",
+                    route: "/branches",
                     icon: "format_textdirection_r_to_l",
                 },
                 {
@@ -124,9 +129,12 @@ export default {
                 },
             ],
             accountMenuItems: [
-                { name: "Profile", route: "/profile", icon: "person" },
-                { name: "Sign In", route: "/sign-in", icon: "login" },
-                { name: "Sign Up", route: "/sign-up", icon: "assignment" },
+                { name: "Profile", route: "/profile",
+                icon: "person" },
+                { name: "Sign In", route: "/sign-in",
+                icon: "login" },
+                { name: "Sign Up", route: "/sign-up",
+                icon: "assignment" },
             ],
         };
     },
