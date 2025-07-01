@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('students', function (Blueprint $table) {
             $table->id();
+            $table->string('student_no')->unique();
             $table->string('title');
             $table->string('first_name');
             $table->string('last_name');
@@ -26,11 +27,15 @@ return new class extends Migration
             $table->foreignId('branch_id')->constrained()->onDelete('cascade');
             $table->foreignId('referral_source_id')->nullable()->constrained()->onDelete('set null');
             $table->string('email')->unique();
-            $table->string('phone_home')->nullable();
+            $table->string('mobile')->nullable();
             $table->string('phone_residence')->nullable();
             $table->string('phone_whatsapp');
             $table->boolean('is_approved')->default(false);
+            $table->boolean('is_active')->nullable()->default(false);
+             $table->foreignId('approved_by')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamp('approved_at')->nullable();
+            $table->string('qualification')->nullable();
+            // Changed to string for simplicity
             $table->timestamps();
         });
     }

@@ -123,6 +123,11 @@ export default {
                     icon: "format_textdirection_r_to_l",
                 },
                 {
+                    name: "Reference",
+                    route: "/reference",
+                    icon: "format_textdirection_r_to_l",
+                },
+                {
                     name: "Notifications",
                     route: "/notifications",
                     icon: "notifications",

@@ -14,7 +14,9 @@ return new class extends Migration
         Schema::create('referral_sources', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('type'); // Person, Social Media, etc.
+            $table->string('type');  // Person, Social Media, etc.
+            $table->string('contact_info')->nullable(); // Optional contact information
+
             $table->timestamps();
         });
     }

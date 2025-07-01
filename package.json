@@ -21,6 +21,7 @@
         "@fortawesome/fontawesome-free": "^6.7.2",
         "@popperjs/core": "^2.11.8",
         "bootstrap": "^5.3.7",
-        "sweetalert2": "^11.22.1"
+        "sweetalert2": "^11.22.1",
+        "vue-multiselect": "^3.2.0"
     }
 }

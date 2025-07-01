@@ -27,6 +27,17 @@ Route::get('/branches', function () {
     return Inertia::render('Branches/index');
 });
 
+
+Route::get('/reference', function () {
+    return Inertia::render('Reference/reference');
+});
+
+
+Route::get('/students-register', function () {
+    return Inertia::render('Students/register');
+});
+
+
 Route::get('/courses', function () {
     return Inertia::render('Course/index');
 });

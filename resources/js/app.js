@@ -7,6 +7,7 @@ import { createApp, h } from 'vue';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
 import 'bootstrap';
 import '../css/dashboard.css';
+import '../css/registerForm.css';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 
 

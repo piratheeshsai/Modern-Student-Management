@@ -3,6 +3,7 @@
 
 use App\Http\Controllers\Branches\BranchController;
 use App\Http\Controllers\Courses\CoursesController;
+use App\Http\Controllers\Reference\ReferenceController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -33,6 +34,22 @@ Route::prefix('courses')->group(function () {
     Route::get('/', [CoursesController::class, 'index'])->name('courses.index');
     Route::post('/', [CoursesController::class, 'store'])->name('courses.store');
     Route::put('/{id}', [CoursesController::class, 'update'])->name('courses.update');
-    Route::delete('/{id}', [CoursesController::class, 'destroy'])->name('branches.destroy');
+    Route::delete('/{id}', [CoursesController::class, 'destroy'])->name('courses.destroy');
+
+});
+
+Route::prefix('reference')->group(function () {
+    Route::get('/', [ReferenceController::class, 'index'])->name('reference.index');
+    Route::post('/', [ReferenceController::class, 'store'])->name('reference.store');
+    Route::put('/{id}', [ReferenceController::class, 'update'])->name('reference.update');
+    Route::delete('/{id}', [ReferenceController::class, 'destroy'])->name('reference.destroy');
+
+});
+
+Route::prefix('students')->group(function () {
+    Route::get('/', [ReferenceController::class, 'index'])->name('reference.index');
+    Route::post('/', [ReferenceController::class, 'store'])->name('reference.store');
+    Route::put('/{id}', [ReferenceController::class, 'update'])->name('reference.update');
+    Route::delete('/{id}', [ReferenceController::class, 'destroy'])->name('reference.destroy');
 
 });
