@@ -638,32 +638,34 @@ const submitForm = async () => {
         resetForm();
 
     } catch (error) {
-        console.error("Error submitting form:", error);
+    console.error("Error submitting form:", error);
 
-        let errorMessage = editingStudent.value
-            ? "An error occurred while updating the student information."
-            : "An error occurred while submitting your registration.";
+    let errorMessage = editingStudent.value
+        ? "An error occurred while updating the student information."
+        : "An error occurred while submitting your registration.";
 
-        if (error.response?.data?.message) {
-            errorMessage = error.response.data.message;
-        } else if (error.response?.data?.errors) {
-            const errors = Object.values(error.response.data.errors).flat();
-            errorMessage = errors.join(", ");
-        }
-
-        // Error SweetAlert
-        Swal.fire({
-            icon: "error",
-            title: "Error!",
-            text: errorMessage,
-            confirmButtonColor: "#dc3545",
-        });
-
-        // Error Toast
-        showToast(errorMessage, "error");
-    } finally {
-        isLoading.value = false;
+    // Check for validation errors first (more specific)
+    if (error.response?.data?.errors) {
+        const errors = Object.values(error.response.data.errors).flat();
+        errorMessage = errors.join(", ");
+    } else if (error.response?.data?.message && error.response.data.message !== "Validation failed") {
+        // Only use the message if it's not the generic "Validation failed"
+        errorMessage = error.response.data.message;
     }
+
+    // Error SweetAlert
+    Swal.fire({
+        icon: "error",
+        title: "Error!",
+        text: errorMessage,
+        confirmButtonColor: "#dc3545",
+    });
+
+    // Error Toast
+    showToast(errorMessage, "error");
+} finally {
+    isLoading.value = false;
+}
 };
 
 

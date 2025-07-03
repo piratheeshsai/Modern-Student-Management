@@ -37,6 +37,10 @@ Route::get('/students-register', function () {
     return Inertia::render('Students/register');
 });
 
+Route::get('/students', function () {
+    return Inertia::render('Students/index');
+});
+
 
 Route::get('/courses', function () {
     return Inertia::render('Course/index');

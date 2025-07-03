@@ -106,7 +106,7 @@ export default {
             mainMenuItems: [
                 { name: "Dashboard", route: "/dashboard",
                 icon: "dashboard" },
-                { name: "Students", route: "/student",
+                { name: "Students", route: "/students",
                 icon: "dashboard" },
                 { name: "Courses", route: "/courses",
                 icon: "table_view" },

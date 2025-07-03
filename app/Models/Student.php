@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Student extends Model
 {
-    //
+    use HasFactory;
+
     protected $fillable = [
         'student_no',
         'title',
@@ -25,10 +27,39 @@ class Student extends Model
         'mobile',
         'phone_residence',
         'phone_whatsapp',
+        'qualification',
         'is_approved',
         'is_active',
         'approved_by',
         'approved_at',
-        'qualification'
     ];
+
+    protected $casts = [
+        'dob' => 'date',
+        'is_approved' => 'boolean',
+        'is_active' => 'boolean',
+        'approved_at' => 'datetime',
+    ];
+
+    // Add these relationship methods
+    public function course()
+    {
+        return $this->belongsTo(Course::class);
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    public function referralSource()
+    {
+        return $this->belongsTo(ReferralSource::class);
+    }
+
+    // If you have an approved_by field
+    public function approvedBy()
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
 }

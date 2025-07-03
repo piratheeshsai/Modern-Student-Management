@@ -4,6 +4,7 @@
 use App\Http\Controllers\Branches\BranchController;
 use App\Http\Controllers\Courses\CoursesController;
 use App\Http\Controllers\Reference\ReferenceController;
+use App\Http\Controllers\students\StudentRegistrationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -47,9 +48,10 @@ Route::prefix('reference')->group(function () {
 });
 
 Route::prefix('students')->group(function () {
-    Route::get('/', [ReferenceController::class, 'index'])->name('reference.index');
-    Route::post('/', [ReferenceController::class, 'store'])->name('reference.store');
-    Route::put('/{id}', [ReferenceController::class, 'update'])->name('reference.update');
-    Route::delete('/{id}', [ReferenceController::class, 'destroy'])->name('reference.destroy');
+    Route::get('/', [StudentRegistrationController::class, 'index'])->name('students.index');
+    Route::post('/', [StudentRegistrationController::class, 'store'])->name('students.store');
+    Route::put('/{id}', [StudentRegistrationController::class, 'update'])->name('students.update');
+    Route::delete('/{id}', [StudentRegistrationController::class, 'destroy'])->name('students.destroy');
 
 });
+
