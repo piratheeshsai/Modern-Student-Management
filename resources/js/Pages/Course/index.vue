@@ -3,6 +3,7 @@ import MainLayout from "@/Layouts/MainLayout.vue";
 import { ref, onMounted, reactive } from "vue";
 import axios from "axios";
 import Swal from "sweetalert2";
+import ToastContainer from '@/Components/ToastContainer.vue'
 
 const courses = ref([]);
 const isModalOpen = ref(false);
@@ -252,9 +253,9 @@ onMounted(() => {
 
 <template>
     <MainLayout>
-
+ <ToastContainer :toasts="toasts" :removeToast="removeToast" />
         <!-- Toast Container -->
-        <div class="toast-container">
+        <!-- <div class="toast-container">
             <div v-for="toast in toasts" :key="toast.id" :class="[
                 'toast-item',
                 toast.show ? 'toast-show' : '',
@@ -271,7 +272,7 @@ onMounted(() => {
                     </button>
                 </div>
             </div>
-        </div>
+        </div> -->
 
 
         <div class="container-fluid py-2">

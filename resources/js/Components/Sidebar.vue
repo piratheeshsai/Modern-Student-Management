@@ -110,6 +110,8 @@ export default {
                 icon: "dashboard" },
                 { name: "Courses", route: "/courses",
                 icon: "table_view" },
+                { name: "Enrollments", route: "/enrollments",
+                icon: "table_view" },
                 { name: "Payment", route: "/billing",
                 icon: "receipt_long" },
                 {

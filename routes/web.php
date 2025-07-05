@@ -37,6 +37,22 @@ Route::get('/students-register', function () {
     return Inertia::render('Students/register');
 });
 
+Route::get('/enrollments', function () {
+    return Inertia::render('Enrollment/enrollments');
+});
+
+
+Route::get('/students-register/{id}', function ($id) {
+    // Fetch the student by $id and pass to the page
+    $student = \App\Models\Student::with(['course', 'branch', 'referralSource'])->findOrFail($id);
+    return Inertia::render('Students/register', [
+        'student' => $student,
+        'isEditing' => true,
+    ]);
+});
+
+
+
 Route::get('/students', function () {
     return Inertia::render('Students/index');
 });

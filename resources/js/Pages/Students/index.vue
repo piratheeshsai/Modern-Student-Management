@@ -1,5 +1,8 @@
 <template>
     <MainLayout>
+ <ToastContainer :toasts="toasts" :removeToast="removeToast" />
+
+
   <div class="student-management">
     <!-- Header with Actions -->
     <div class="card mb-4">
@@ -271,6 +274,25 @@
         </div>
       </template>
     </DataTable>
+
+    <!-- Toast Notification -->
+    <div class="toast-container" style="position: fixed; top: 1rem; right: 1rem; z-index: 9999;">
+      <div
+        v-for="toast in toasts"
+        :key="toast.id"
+        :class="[
+          'toast-item',
+          toast.show ? 'toast-show' : '',
+          toast.type === 'success' ? 'toast-success' : 'toast-error'
+        ]"
+        style="margin-bottom: 0.5rem; min-width: 220px; padding: 1rem; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); color: #fff; font-weight: 500;"
+      >
+        <span v-if="toast.type === 'success'" style="margin-right: 0.5rem;">✅</span>
+        <span v-else style="margin-right: 0.5rem;">❌</span>
+        {{ toast.message }}
+        <button @click="removeToast(toast.id)" style="background: none; border: none; color: #fff; float: right; font-size: 1.1rem; cursor: pointer;">×</button>
+      </div>
+    </div>
   </div>
   </MainLayout>
 </template>
@@ -280,6 +302,49 @@ import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { router } from '@inertiajs/vue3'
 import axios from 'axios'
 import MainLayout from '@/Layouts/MainLayout.vue'
+import Swal from 'sweetalert2'
+import ToastContainer from '@/Components/ToastContainer.vue'
+
+
+const toasts = ref([]);
+
+
+const showToast = (message: string, type: "success" | "error" = "success") => {
+    const id = Date.now();
+    const toast = {
+        id,
+        message,
+        type,
+        show: false,
+    };
+
+    toasts.value.push(toast);
+
+    // Trigger animation
+    setTimeout(() => {
+        const toastElement = toasts.value.find((t) => t.id === id);
+        if (toastElement) toastElement.show = true;
+    }, 100);
+
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        removeToast(id);
+    }, 10000);
+};
+
+const removeToast = (id: number) => {
+    const index = toasts.value.findIndex((t) => t.id === id);
+    if (index > -1) {
+        toasts.value[index].show = false;
+        setTimeout(() => {
+            toasts.value.splice(index, 1);
+        }, 300);
+    }
+};
+
+
+
+
 
 // Define FilterMatchMode and FilterOperator manually since components are global
 const FilterMatchMode = {
@@ -464,21 +529,48 @@ const viewStudent = (student) => {
   console.log('View student:', student)
 }
 
-const editStudent = (student) => {
-  // Navigate to register page with student data
-  router.visit('/students-register', {
-    method: 'get',
-    data: {
-      edit: true,
-      student_id: student.id
-    }
-  })
-}
+// const editStudent = (student) => {
+//   // Navigate to register page with student data
+//   router.visit('/students-register', {
+//     method: 'get',
+//     data: {
+//       edit: true,
+//       student_id: student.id
+//     }
+//   })
+// }
 
-const confirmDelete = (student) => {
-  // Implement delete confirmation
-  console.log('Delete student:', student)
-}
+const editStudent = (student) => {
+  router.visit(`/students-register/${student.id}`);
+};
+
+
+const confirmDelete = async (student) => {
+    const result = await Swal.fire({
+        title: "Are you sure?",
+        text: "You won't be able to revert this!",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#dc3545",
+        cancelButtonColor: "#6c757d",
+        confirmButtonText: "Yes, delete it!",
+    });
+
+    if (result.isConfirmed) {
+        try {
+            await axios.delete(`/api/students/${student.id}`);
+            showToast("Student deleted successfully!", "success");
+            loadStudents(); // Reload the table data
+        } catch (error) {
+            console.error("Error deleting student:", error);
+            let errorMessage = "An error occurred while deleting the student.";
+            if (error.response?.data?.message) {
+                errorMessage = error.response.data.message;
+            }
+            showToast(errorMessage, "error");
+        }
+    }
+};
 
 // Load data on mount
 onMounted(async () => {
@@ -537,5 +629,42 @@ onMounted(async () => {
 :deep(.custom-outline-btn:hover) {
   background-color: #6c757d !important;
   color: white !important;
+}
+
+/* Toast styles */
+.toast-container {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 9999;
+}
+
+.toast-item {
+  margin-bottom: 0.5rem;
+  min-width: 220px;
+  padding: 1rem;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  color: #fff;
+  font-weight: 500;
+}
+
+.toast-success {
+  background-color: #28a745;
+}
+
+.toast-error {
+  background-color: #dc3545;
+}
+
+.toast-show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.toast-item {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.3s, transform 0.3s;
 }
 </style>

@@ -32,15 +32,15 @@ class StudentRegistrationController extends Controller
                     $globalSearch = $filters['global']['value'];
                     $query->where(function ($q) use ($globalSearch) {
                         $q->where('student_no', 'like', "%{$globalSearch}%")
-                          ->orWhere('first_name', 'like', "%{$globalSearch}%")
-                          ->orWhere('last_name', 'like', "%{$globalSearch}%")
-                          ->orWhere('email', 'like', "%{$globalSearch}%")
-                          ->orWhere('mobile', 'like', "%{$globalSearch}%")
-                          ->orWhereHas('course', function ($courseQuery) use ($globalSearch) {
-                              $courseQuery->where('name', 'like', "%{$globalSearch}%");
-                          })
-                          ->orWhereHas('branch', function ($branchQuery) use ($globalSearch) {
-                              $branchQuery->where('name', 'like', "%{$globalSearch}%");
+                        ->orWhere('first_name', 'like', "%{$globalSearch}%")
+                        ->orWhere('last_name', 'like', "%{$globalSearch}%")
+                        ->orWhere('email', 'like', "%{$globalSearch}%")
+                        ->orWhere('mobile', 'like', "%{$globalSearch}%")
+                        ->orWhereHas('course', function ($courseQuery) use ($globalSearch) {
+                            $courseQuery->where('name', 'like', "%{$globalSearch}%");
+                        })
+                        ->orWhereHas('branch', function ($branchQuery) use ($globalSearch) {
+                        $branchQuery->where('name', 'like', "%{$globalSearch}%");
                           });
                     });
                 }
@@ -344,8 +344,8 @@ class StudentRegistrationController extends Controller
         try {
             $student = Student::findOrFail($id);
 
-            // Validate the request data
-            $validatedData = $request->validate([
+            // Use Validator facade for custom messages (same as store)
+            $validator = Validator::make($request->all(), [
                 'title' => 'required|string|in:Mr,Ms,Mrs,Miss,Rev,Dr',
                 'first_name' => 'required|string|max:255',
                 'last_name' => 'required|string|max:255',
@@ -365,7 +365,79 @@ class StudentRegistrationController extends Controller
                 'qualification' => 'nullable|string|max:100',
                 'preferred_contacts' => 'nullable|array',
                 'preferred_contacts.*' => 'string|in:email_personal,phone_res,phone_mobile,whatsapp',
+            ], [
+                // Title validation messages
+                'title.required' => 'Title is required',
+                'title.in' => 'Please select a valid title (Mr, Ms, Mrs, Miss, Rev, Dr)',
+
+                // Name validation messages
+                'first_name.required' => 'First name is required',
+                'first_name.max' => 'First name cannot exceed 255 characters',
+                'last_name.required' => 'Last name is required',
+                'last_name.max' => 'Last name cannot exceed 255 characters',
+
+                // ID validation messages
+                'id_type.required' => 'ID type is required',
+                'id_type.in' => 'Please select a valid ID type (NIC, P/P, Postal)',
+                'id_no.required' => 'ID number is required',
+                'id_no.unique' => 'This ID number is already registered',
+                'id_no.max' => 'ID number cannot exceed 50 characters',
+
+                // Date validation messages
+                'dob.required' => 'Date of birth is required',
+                'dob.date' => 'Please enter a valid date of birth',
+                'dob.before' => 'Date of birth must be before today',
+
+                // Address validation messages
+                'address.required' => 'Home address is required',
+                'address.max' => 'Address cannot exceed 500 characters',
+
+                // School and company validation messages
+                'school_name.max' => 'School name cannot exceed 255 characters',
+                'company_name.max' => 'Company name cannot exceed 255 characters',
+
+                // Course and branch validation messages
+                'course_id.required' => 'Please select a course',
+                'course_id.integer' => 'Invalid course selection',
+                'course_id.exists' => 'Selected course does not exist',
+                'branch_id.required' => 'Please select a branch',
+                'branch_id.integer' => 'Invalid branch selection',
+                'branch_id.exists' => 'Selected branch does not exist',
+
+                // Referral source validation messages
+                'referral_source_id.integer' => 'Invalid referral source selection',
+                'referral_source_id.exists' => 'Selected referral source does not exist',
+
+                // Email validation messages
+                'email.required' => 'Email address is required',
+                'email.email' => 'Please enter a valid email address',
+                'email.unique' => 'This email address is already registered',
+                'email.max' => 'Email address cannot exceed 255 characters',
+
+                // Phone validation messages
+                'mobile.required' => 'Mobile number is required',
+                'mobile.max' => 'Mobile number cannot exceed 15 characters',
+                'phone_residence.max' => 'Residence phone cannot exceed 15 characters',
+                'phone_whatsapp.max' => 'WhatsApp number cannot exceed 15 characters',
+
+                // Qualification validation messages
+                'qualification.max' => 'Qualification cannot exceed 100 characters',
+
+                // Preferred contacts validation messages
+                'preferred_contacts.array' => 'Invalid preferred contacts format',
+                'preferred_contacts.*.in' => 'Invalid preferred contact option',
             ]);
+
+            // Check if validation fails
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $validatedData = $validator->validated();
 
             // Update the student record
             $student->update([
@@ -386,6 +458,7 @@ class StudentRegistrationController extends Controller
                 'phone_residence' => $validatedData['phone_residence'],
                 'phone_whatsapp' => $validatedData['phone_whatsapp'],
                 'qualification' => $validatedData['qualification'],
+                'preferred_contacts' => $validatedData['preferred_contacts'] ?? [],
             ]);
 
             // Load relationships for response

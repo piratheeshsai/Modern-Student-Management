@@ -428,11 +428,16 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted, onUnmounted } from 'vue'
+import { reactive, ref, onMounted, onUnmounted, watch } from 'vue'
 import axios from 'axios'
 import Multiselect from 'vue-multiselect'
 import 'vue-multiselect/dist/vue-multiselect.min.css'
 import Swal from 'sweetalert2'
+import { router } from '@inertiajs/vue3'
+
+const props = defineProps({
+  student: { type: Object, default: null }
+});
 
 const referralSources = ref([])
 const course =ref([]);
@@ -523,7 +528,16 @@ const QualificationOptions = [
     { label: 'Other', value: 'other' },
 ]
 
-
+// Helper to format date to YYYY-MM-DD
+function formatDateForInput(dateStr) {
+  if (!dateStr) return '';
+  // If already in YYYY-MM-DD, return as is
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+  // Otherwise, try to parse and format
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '';
+  return d.toISOString().slice(0, 10);
+}
 
 onMounted(async () => {
     try {
@@ -549,6 +563,60 @@ onMounted(async () => {
     }
 })
 
+// Fill form if editing
+onMounted(() => {
+  if (props.student) {
+    Object.assign(form, {
+      title: props.student.title || '',
+      surname: props.student.last_name || '',
+      firstName: props.student.first_name || '',
+      idNo: props.student.id_no || '',
+      idType: props.student.id_type || '',
+      dob: formatDateForInput(props.student.dob),
+      address: props.student.address || '',
+      schoolName: props.student.school_name || '',
+      qualification: props.student.qualification || '',
+      courseName: props.student.course?.name || '',
+      branchName: props.student.branch?.name || '',
+      email: props.student.email || '',
+      company: props.student.company_name || '',
+      refSource: props.student.referralSource?.name || props.student.referral_source?.name || '',
+      resPhone: props.student.phone_residence || '',
+      mobile: props.student.mobile || '',
+      whatsapp: props.student.phone_whatsapp || '',
+      preferredContacts: props.student.preferred_contacts || [],
+      agree: false,
+    });
+    editingStudent.value = props.student;
+  }
+});
+
+watch(() => props.student, (newStudent) => {
+  if (newStudent) {
+    Object.assign(form, {
+      title: newStudent.title || '',
+      surname: newStudent.last_name || '',
+      firstName: newStudent.first_name || '',
+      idNo: newStudent.id_no || '',
+      idType: newStudent.id_type || '',
+      dob: formatDateForInput(newStudent.dob),
+      address: newStudent.address || '',
+      schoolName: newStudent.school_name || '',
+      qualification: newStudent.qualification || '',
+      courseName: newStudent.course?.name || '',
+      branchName: newStudent.branch?.name || '',
+      email: newStudent.email || '',
+      company: newStudent.company_name || '',
+      refSource: newStudent.referralSource?.name || newStudent.referral_source?.name || '',
+      resPhone: newStudent.phone_residence || '',
+      mobile: newStudent.mobile || '',
+      whatsapp: newStudent.phone_whatsapp || '',
+      preferredContacts: newStudent.preferred_contacts || [],
+      agree: false,
+    });
+    editingStudent.value = newStudent;
+  }
+});
 
 const submitForm = async () => {
     // Validation
@@ -609,63 +677,71 @@ const submitForm = async () => {
         if (editingStudent.value) {
             // Update existing student
             response = await axios.put(`/api/students/${editingStudent.value.id}`, data);
+
+            // Success SweetAlert
+            Swal.fire({
+                icon: "success",
+                title: "Success!",
+                text: "Student information has been updated successfully.",
+                confirmButtonColor: "#28a745",
+                timer: 5000,
+                showConfirmButton: true,
+            });
+
+            showToast("Student updated successfully!", "success");
+
+            // Redirect to student index page after update
+            router.visit('/students');
+            return; // Stop further execution
         } else {
             // Create new student
             response = await axios.post("/api/students", data);
+
+            // Success SweetAlert
+            Swal.fire({
+                icon: "success",
+                title: "Success!",
+                text: "Registration has been submitted successfully. You will receive a confirmation email shortly.",
+                confirmButtonColor: "#28a745",
+                timer: 5000,
+                showConfirmButton: true,
+            });
+
+            showToast("Registration submitted successfully!", "success");
+
+            // Reset form after successful submission
+            resetForm();
         }
 
-        // Success SweetAlert
+    } catch (error) {
+        console.error("Error submitting form:", error);
+
+        let errorMessage = editingStudent.value
+            ? "An error occurred while updating the student information."
+            : "An error occurred while submitting your registration.";
+
+        // Check for validation errors first (more specific)
+        if (error.response?.data?.errors) {
+            const errors = Object.values(error.response.data.errors).flat();
+            errorMessage = errors.join(", ");
+        } else if (error.response?.data?.message && error.response.data.message !== "Validation failed") {
+            // Only use the message if it's not the generic "Validation failed"
+            errorMessage = error.response.data.message;
+        }
+
+        // Error SweetAlert
         Swal.fire({
-            icon: "success",
-            title: "Success!",
-            text: editingStudent.value
-                ? "Student information has been updated successfully."
-                : "Registration has been submitted successfully. You will receive a confirmation email shortly.",
-            confirmButtonColor: "#28a745",
-            timer: 5000,
-            showConfirmButton: true,
+            icon: "error",
+            title: "Error!",
+            text: errorMessage,
+            confirmButtonColor: "#dc3545",
         });
 
-        // Success Toast
-        showToast(
-            editingStudent.value
-                ? "Student updated successfully!"
-                : "Registration submitted successfully!",
-            "success"
-        );
-
-        // Reset form after successful submission
-        resetForm();
-
-    } catch (error) {
-    console.error("Error submitting form:", error);
-
-    let errorMessage = editingStudent.value
-        ? "An error occurred while updating the student information."
-        : "An error occurred while submitting your registration.";
-
-    // Check for validation errors first (more specific)
-    if (error.response?.data?.errors) {
-        const errors = Object.values(error.response.data.errors).flat();
-        errorMessage = errors.join(", ");
-    } else if (error.response?.data?.message && error.response.data.message !== "Validation failed") {
-        // Only use the message if it's not the generic "Validation failed"
-        errorMessage = error.response.data.message;
+        // Error Toast
+        showToast(errorMessage, "error");
+    } finally {
+        isLoading.value = false;
     }
-
-    // Error SweetAlert
-    Swal.fire({
-        icon: "error",
-        title: "Error!",
-        text: errorMessage,
-        confirmButtonColor: "#dc3545",
-    });
-
-    // Error Toast
-    showToast(errorMessage, "error");
-} finally {
-    isLoading.value = false;
-}
 };
 
 
@@ -698,7 +774,6 @@ const resetForm = () => {
 
 
 
-
 const mobileMenuOpen = ref(false);
 
 // Add method to toggle mobile menu
@@ -723,7 +798,6 @@ const closeMobileMenu = () => {
 onUnmounted(() => {
     document.body.style.overflow = '';
 });
-
 
 
 
