@@ -3,6 +3,7 @@
 
 use App\Http\Controllers\Branches\BranchController;
 use App\Http\Controllers\Courses\CoursesController;
+use App\Http\Controllers\Enrollment\EnrollmentController;
 use App\Http\Controllers\Reference\ReferenceController;
 use App\Http\Controllers\students\StudentRegistrationController;
 use Illuminate\Http\Request;
@@ -55,3 +56,10 @@ Route::prefix('students')->group(function () {
 
 });
 
+Route::prefix('enrollments')->group(function () {
+    Route::get('/', [EnrollmentController::class, 'index'])->name('enrollments.index');
+    Route::post('/', [EnrollmentController::class, 'store'])->name('enrollments.store');
+    Route::put('/{id}', [EnrollmentController::class, 'update'])->name('enrollments.update');
+    Route::delete('/{id}', [EnrollmentController::class, 'destroy'])->name('enrollments.destroy');
+
+});
