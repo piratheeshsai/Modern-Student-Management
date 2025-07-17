@@ -7,6 +7,8 @@ use App\Models\Student;
 use Illuminate\Database\Eloquent\Casts\Json;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -70,8 +72,8 @@ class StudentRegistrationController extends Controller
                     });
                 }
 
-                if (isset($filters['is_approved']['value']) && $filters['is_approved']['value'] !== null) {
-                    $query->where('is_approved', $filters['is_approved']['value']);
+                if (isset($filters['is_verified']['value']) && $filters['is_verified']['value'] !== null) {
+                    $query->where('is_verified', $filters['is_verified']['value']);
                 }
 
                 if (isset($filters['created_at']['value']) && !empty($filters['created_at']['value'])) {
@@ -132,7 +134,7 @@ class StudentRegistrationController extends Controller
                     'school_name' => $student->school_name,
                     'company_name' => $student->company_name,
                     'qualification' => $student->qualification,
-                    'is_approved' => $student->is_approved,
+                    'is_verified' => $student->is_verified,
                     'is_active' => $student->is_active,
                     'created_at' => $student->created_at,
                     'course' => $student->course ? [
@@ -296,7 +298,7 @@ class StudentRegistrationController extends Controller
                 'phone_residence' => $validatedData['phone_residence'] ?? null,
                 'phone_whatsapp' => $validatedData['phone_whatsapp'] ?? null,
                 'qualification' => $validatedData['qualification'] ?? null,
-                'is_approved' => false,
+                'is_verified' => false,
                 'is_active' => false,
             ]);
 
@@ -502,6 +504,88 @@ class StudentRegistrationController extends Controller
                 'success' => false,
                 'message' => 'Failed to delete student',
                 'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Verify a student
+     */
+    public function verify(Student $student): JsonResponse
+    {
+        try {
+            // Check if student is already verified
+            if ($student->is_verified) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Student is already verified.'
+                ], 400);
+            }
+
+            // Update student verification status
+            $student->update([
+                'is_verified' => true,
+                'verified_at' => now(),
+                'verified_by' => Auth::check() ? Auth::id() : null, // If you have authentication
+            ]);
+
+            // Optional: Log the verification
+            Log::info("Student {$student->full_name} (ID: {$student->id}) has been verified.");
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Student verified successfully.',
+                'data' => $student->fresh()
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error verifying student: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while verifying the student.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Unverify a student
+     */
+    public function unverify(Student $student): JsonResponse
+    {
+        try {
+            // Check if student is already unverified
+            if (!$student->is_verified) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Student is already unverified.'
+                ], 400);
+            }
+
+            // Update student verification status
+            $student->update([
+                'is_verified' => false,
+                'verified_at' => null,
+                'verified_by' => null,
+                'unverified_at' => now(),
+                'unverified_by' => Auth::id() // If you have authentication
+            ]);
+
+            // Optional: Log the unverification
+            Log::info("Student {$student->full_name} (ID: {$student->id}) has been unverified.");
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Student unverified successfully.',
+                'data' => $student->fresh()
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error unverifying student: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while unverifying the student.'
             ], 500);
         }
     }

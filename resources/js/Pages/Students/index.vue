@@ -183,9 +183,9 @@
 
       <!-- Status -->
       <Column
-        field="is_approved"
+        field="is_verified"
         header="Status"
-        sortField="is_approved"
+        sortField="is_verified"
         :sortable="true"
         style="min-width: 100px"
       >
@@ -232,25 +232,27 @@
       <!-- Actions -->
       <Column header="Actions" :exportable="false" style="min-width: 120px">
         <template #body="slotProps">
-          <div class="d-flex gap-1">
-            <Button
-              icon="pi pi-eye"
-              class="p-button-rounded p-button-text p-button-sm"
-              @click="viewStudent(slotProps.data)"
-              v-tooltip.top="'View'"
-            />
-            <Button
-              icon="pi pi-pencil"
-              class="p-button-rounded p-button-text p-button-sm p-button-warning"
-              @click="editStudent(slotProps.data)"
-              v-tooltip.top="'Edit'"
-            />
-            <Button
-              icon="pi pi-trash"
-              class="p-button-rounded p-button-text p-button-sm p-button-danger"
-              @click="confirmDelete(slotProps.data)"
-              v-tooltip.top="'Delete'"
-            />
+          <div class="d-flex justify-content-center">
+            <Dropdown
+              v-model="selectedAction"
+              :options="getActionOptions(slotProps.data)"
+              optionLabel="label"
+              optionValue="value"
+              class="p-dropdown-sm"
+              @change="handleActionSelect($event, slotProps.data)"
+            >
+              <template #value="slotProps">
+                <span class="p-dropdown-label">
+                  <i class="pi pi-ellipsis-v"></i>
+                </span>
+              </template>
+              <template #option="slotProps">
+                <div class="d-flex align-items-center gap-2">
+                  <i :class="slotProps.option.icon" :style="{ color: slotProps.option.color }"></i>
+                  <span>{{ slotProps.option.label }}</span>
+                </div>
+              </template>
+            </Dropdown>
           </div>
         </template>
       </Column>
@@ -266,13 +268,7 @@
         </div>
       </template>
 
-      <!-- Loading -->
-      <template #loading>
-        <div class="text-center p-4">
-          <ProgressSpinner />
-          <div class="mt-2">Loading students...</div>
-        </div>
-      </template>
+
     </DataTable>
 
     <!-- Toast Notification -->
@@ -375,6 +371,7 @@ const FilterOperator = {
 const dt = ref()
 const students = ref([])
 const selectedStudents = ref([])
+const selectedAction = ref(null)
 const totalRecords = ref(0)
 const loading = ref(false)
 const showAddDialog = ref(false)
@@ -511,12 +508,12 @@ const exportCSV = () => {
 }
 
 const getStatusLabel = (student) => {
-  if (student.is_approved) return 'Approved'
+  if (student.is_verified) return 'Verified'
   return 'Pending'
 }
 
 const getStatusSeverity = (student) => {
-  if (student.is_approved) return 'success'
+  if (student.is_verified) return 'success'
   return 'warning'
 }
 
@@ -529,16 +526,7 @@ const viewStudent = (student) => {
   console.log('View student:', student)
 }
 
-// const editStudent = (student) => {
-//   // Navigate to register page with student data
-//   router.visit('/students-register', {
-//     method: 'get',
-//     data: {
-//       edit: true,
-//       student_id: student.id
-//     }
-//   })
-// }
+
 
 const editStudent = (student) => {
   router.visit(`/students-register/${student.id}`);
@@ -571,6 +559,131 @@ const confirmDelete = async (student) => {
         }
     }
 };
+
+const verifyStudent = async (student) => {
+  const result = await Swal.fire({
+    title: "Verify Student?",
+    text: `Are you sure you want to verify ${student.full_name}?`,
+    icon: "question",
+    showCancelButton: true,
+    confirmButtonColor: "#28a745",
+    cancelButtonColor: "#6c757d",
+    confirmButtonText: "Yes, verify!",
+  });
+
+  if (result.isConfirmed) {
+    try {
+      await axios.patch(`/api/students/${student.id}/verify`);
+      showToast("Student verified successfully!", "success");
+      loadStudents(); // Reload the table data
+    } catch (error) {
+      console.error("Error verifying student:", error);
+      let errorMessage = "An error occurred while verifying the student.";
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      showToast(errorMessage, "error");
+    }
+  }
+};
+
+const unverifyStudent = async (student) => {
+  const result = await Swal.fire({
+    title: "Unverify Student?",
+    text: `Are you sure you want to unverify ${student.full_name}?`,
+    icon: "question",
+    showCancelButton: true,
+    confirmButtonColor: "#ffc107",
+    cancelButtonColor: "#6c757d",
+    confirmButtonText: "Yes, unverify!",
+  });
+
+  if (result.isConfirmed) {
+    try {
+      await axios.patch(`/api/students/${student.id}/unverify`);
+      showToast("Student unverified successfully!", "success");
+      loadStudents(); // Reload the table data
+    } catch (error) {
+      console.error("Error unverifying student:", error);
+      let errorMessage = "An error occurred while unverifying the student.";
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      showToast(errorMessage, "error");
+    }
+  }
+};
+
+// Replace the static actionOptions with a dynamic function
+const getActionOptions = (student) => {
+  const baseActions = [
+    {
+      label: 'View',
+      value: 'view',
+      icon: 'pi pi-eye',
+      color: '#6c757d'
+    },
+    {
+      label: 'Edit',
+      value: 'edit',
+      icon: 'pi pi-pencil',
+      color: '#ffc107'
+    }
+  ]
+
+  // Add verify/unverify based on student status
+  if (!student.is_verified) {
+    baseActions.push({
+      label: 'Verify',
+      value: 'verify',
+      icon: 'pi pi-check-circle',
+      color: '#28a745'
+    })
+  } else {
+    baseActions.push({
+      label: 'Unverify',
+      value: 'unverify',
+      icon: 'pi pi-times-circle',
+      color: '#ffc107'
+    })
+  }
+
+  // Add delete action
+  baseActions.push({
+    label: 'Delete',
+    value: 'delete',
+    icon: 'pi pi-trash',
+    color: '#dc3545'
+  })
+
+  return baseActions
+}
+
+// Update the handleActionSelect method
+const handleActionSelect = (event, student) => {
+  const action = event.value
+
+  switch (action) {
+    case 'view':
+      viewStudent(student)
+      break
+    case 'edit':
+      editStudent(student)
+      break
+    case 'verify':
+      verifyStudent(student)
+      break
+    case 'unverify':
+      unverifyStudent(student)
+      break
+    case 'delete':
+      confirmDelete(student)
+      break
+  }
+
+  // Reset the dropdown value
+  selectedAction.value = null
+}
 
 // Load data on mount
 onMounted(async () => {

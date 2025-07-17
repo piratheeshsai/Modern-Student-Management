@@ -32,6 +32,7 @@ import Tag from 'primevue/tag';
 import Avatar from 'primevue/avatar';
 import ProgressSpinner from 'primevue/progressspinner';
 import Tooltip from 'primevue/tooltip';
+import Select from 'primevue/select';
 import '../css/dashboard.css';
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -67,6 +68,7 @@ createInertiaApp({
         app.component('Tag', Tag);
         app.component('Avatar', Avatar);
         app.component('ProgressSpinner', ProgressSpinner);
+        app.component('Select', Select);
 
         // Register directives
         app.directive('tooltip', Tooltip);

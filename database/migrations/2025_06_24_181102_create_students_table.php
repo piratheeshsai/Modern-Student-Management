@@ -30,10 +30,10 @@ return new class extends Migration
             $table->string('mobile')->nullable();
             $table->string('phone_residence')->nullable();
             $table->string('phone_whatsapp');
-            $table->boolean('is_approved')->default(false);
+            $table->boolean('is_verified')->default(false);
             $table->boolean('is_active')->nullable()->default(false);
-             $table->foreignId('approved_by')->nullable()->constrained('users')->onDelete('set null');
-            $table->timestamp('approved_at')->nullable();
+            $table->foreignId('verified_by')->nullable()->constrained('users')->onDelete('set null');
+            $table->timestamp('verified_at')->nullable();
             $table->string('qualification')->nullable();
             // Changed to string for simplicity
             $table->timestamps();

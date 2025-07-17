@@ -1,12 +1,20 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
-use App\Models\Branch;
+use App\Http\Controllers\Branches\BranchController;
+use App\Http\Controllers\Courses\CoursesController;
+use App\Http\Controllers\Enrollment\EnrollmentController;
+use App\Http\Controllers\Reference\ReferenceController;
+use App\Http\Controllers\students\StudentRegistrationController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+*/
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -16,33 +24,45 @@ Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-
-// Route::get('/branches', function () {
-//     return Inertia::render('Branches', [
-//         'branches' => Branch::all(),
-//     ]);
-// });
-
-Route::get('/branches', function () {
-    return Inertia::render('Branches/index');
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
+// Add your page routes (if you have any)
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/students', function () {
+        return Inertia::render('Students/index');
+    })->name('students.page');
 
-Route::get('/reference', function () {
-    return Inertia::render('Reference/reference');
-});
 
-
-Route::get('/students-register', function () {
+    Route::get('/students-register', function () {
     return Inertia::render('Students/register');
 });
 
-Route::get('/enrollments', function () {
-    return Inertia::render('Enrollment/enrollments');
-});
+    Route::get('/branches', function () {
+        return Inertia::render('Branches/index');
+    })->name('branches.page');
+
+    Route::get('/courses', function () {
+        return Inertia::render('Course/index');
+    })->name('courses.page');
+
+    Route::get('/enrollments', function () {
+        return Inertia::render('Enrollment/enrollments');
+    })->name('enrollments.page');
+
+    Route::get('/enrollments/create', function () {
+        return Inertia::render('Enrollment/create');
+    })->name('enrollments.create');
 
 
-Route::get('/students-register/{id}', function ($id) {
+    Route::get('/reference', function () {
+        return Inertia::render('Reference/reference');
+    })->name('reference.page');
+
+    Route::get('/students-register/{id}', function ($id) {
     // Fetch the student by $id and pass to the page
     $student = \App\Models\Student::with(['course', 'branch', 'referralSource'])->findOrFail($id);
     return Inertia::render('Students/register', [
@@ -50,22 +70,46 @@ Route::get('/students-register/{id}', function ($id) {
         'isEditing' => true,
     ]);
 });
-
-
-
-Route::get('/students', function () {
-    return Inertia::render('Students/index');
 });
 
-
-Route::get('/courses', function () {
-    return Inertia::render('Course/index');
+// Public API routes (no auth required) - for reading data
+Route::prefix('api')->group(function () {
+    Route::get('branches', [BranchController::class, 'index'])->name('branches.index');
+    Route::get('courses', [CoursesController::class, 'index'])->name('courses.index');
+    Route::get('students', [StudentRegistrationController::class, 'index'])->name('students.index');
+    Route::get('reference', [ReferenceController::class, 'index'])->name('reference.index');
+    Route::get('enrollments', [EnrollmentController::class, 'index'])->name('enrollments.index');
 });
 
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+// Protected API routes (auth required) - for data manipulation
+Route::middleware(['auth'])->prefix('api')->group(function () {
+
+    // Branches management
+    Route::post('branches', [BranchController::class, 'store'])->name('branches.store');
+    Route::put('branches/{id}', [BranchController::class, 'update'])->name('branches.update');
+    Route::delete('branches/{id}', [BranchController::class, 'destroy'])->name('branches.destroy');
+
+    // Courses management
+    Route::post('courses', [CoursesController::class, 'store'])->name('courses.store');
+    Route::put('courses/{id}', [CoursesController::class, 'update'])->name('courses.update');
+    Route::delete('courses/{id}', [CoursesController::class, 'destroy'])->name('courses.destroy');
+
+    // Reference management
+    Route::post('reference', [ReferenceController::class, 'store'])->name('reference.store');
+    Route::put('reference/{id}', [ReferenceController::class, 'update'])->name('reference.update');
+    Route::delete('reference/{id}', [ReferenceController::class, 'destroy'])->name('reference.destroy');
+
+    // Students management
+    Route::post('students', [StudentRegistrationController::class, 'store'])->name('students.store');
+    Route::put('students/{id}', [StudentRegistrationController::class, 'update'])->name('students.update');
+    Route::delete('students/{id}', [StudentRegistrationController::class, 'destroy'])->name('students.destroy');
+    Route::patch('students/{student}/verify', [StudentRegistrationController::class, 'verify'])->name('students.verify');
+    Route::patch('students/{student}/unverify', [StudentRegistrationController::class, 'unverify'])->name('students.unverify');
+
+    // Enrollments management
+    Route::post('enrollments', [EnrollmentController::class, 'store'])->name('enrollments.store');
+    Route::put('enrollments/{id}', [EnrollmentController::class, 'update'])->name('enrollments.update');
+    Route::delete('enrollments/{id}', [EnrollmentController::class, 'destroy'])->name('enrollments.destroy');
 });
 
 require __DIR__.'/auth.php';

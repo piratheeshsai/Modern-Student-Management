@@ -28,17 +28,17 @@ class Student extends Model
         'phone_residence',
         'phone_whatsapp',
         'qualification',
-        'is_approved',
+        'is_verified',
         'is_active',
-        'approved_by',
-        'approved_at',
+        'verified_at',
+        'verified_by',
     ];
 
     protected $casts = [
         'dob' => 'date',
-        'is_approved' => 'boolean',
+        'is_verified' => 'boolean',
         'is_active' => 'boolean',
-        'approved_at' => 'datetime',
+        'verified_at' => 'datetime',
     ];
 
     // Add these relationship methods
@@ -58,8 +58,8 @@ class Student extends Model
     }
 
     // If you have an approved_by field
-    public function approvedBy()
+    public function verifiedBy()
     {
-        return $this->belongsTo(User::class, 'approved_by');
+        return $this->belongsTo(User::class, 'verified_by');
     }
 }

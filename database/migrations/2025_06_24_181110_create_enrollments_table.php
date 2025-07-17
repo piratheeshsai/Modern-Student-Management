@@ -18,6 +18,9 @@ return new class extends Migration
             $table->date('enrollment_date');
             $table->string('status')->default('active');
             $table->foreignId('branch_id')->constrained()->onDelete('cascade');
+            $table->foreignId('created_by')->constrained('users')->onDelete('cascade');
+            $table->decimal('discount_amount', 8, 2)->default(0.00);
+            $table->decimal('total_amount', 8, 2)->default(0.00);
             $table->timestamps();
         });
     }
