@@ -10,6 +10,7 @@ import Checkbox from 'primevue/checkbox';
 import Textarea from 'primevue/textarea';
 import Button from 'primevue/button';
 import Calendar from 'primevue/calendar';
+import Swal from 'sweetalert2'; // Make sure you have this import
 
 // --- TYPE DEFINITIONS ---
 interface EnrollmentErrors {
@@ -199,27 +200,85 @@ const generateInstalments = () => {
     form.value.payments = instalments;
 };
 
-const submitForm = () => {
-    isLoading.value = true;
-    errors.value = {};
+const submitForm = async () => {
+    // Required field validation
+    if (
+        !form.value.student_id ||
+        !form.value.course_id ||
+        !form.value.payment_plan ||
+        !form.value.enrollment_date ||
+        !form.value.status
+    ) {
+        Swal.fire({
+            icon: "warning",
+            title: "Validation Error",
+            text: "Please fill in all required fields.",
+            confirmButtonColor: "#28a745",
+        });
+        return;
+    }
 
     // Final check on payments before submitting
     if (form.value.payment_plan === 'full') {
         form.value.payments[0].status = form.value.full_payment_paid_now ? 'Paid' : 'Pending';
     }
 
-    router.post('/enrollments', form.value, {
-        onSuccess: () => {
-            // Show success toast/message
-        },
-        onError: (err) => {
-            errors.value = err;
-            // Show error toast/message
-        },
-        onFinish: () => {
-            isLoading.value = false;
+    // Prepare payload with formatted dates
+    const payload = {
+        ...form.value,
+        enrollment_date: form.value.enrollment_date
+            ? new Date(form.value.enrollment_date).toISOString().slice(0, 10)
+            : null,
+        payments: form.value.payments.map(p => ({
+            ...p,
+            due_date: p.due_date
+                ? new Date(p.due_date).toISOString().slice(0, 10)
+                : null,
+        })),
+    };
+
+    isLoading.value = true;
+    errors.value = {};
+
+    try {
+        const response = await axios.post('/api/enrollments', payload);
+
+        Swal.fire({
+            icon: "success",
+            title: "Success!",
+            text: "Enrollment has been created successfully.",
+            confirmButtonColor: "#28a745",
+            timer: 4000,
+            showConfirmButton: true,
+        });
+
+        // Optionally reset form or redirect
+        // router.visit('/enrollments');
+    } catch (error) {
+        let errorMessage = "An error occurred while submitting the enrollment.";
+
+        if (error.response?.data?.errors) {
+            const errorList = Object.values(error.response.data.errors).flat();
+            errorMessage = errorList.join(", ");
+            errors.value = error.response.data.errors;
+        } else if (error.response?.data?.message) {
+            errorMessage = error.response.data.message;
         }
-    });
+
+        // Suggested code change incorporated here
+        if (error.response?.data?.error) {
+            errorMessage += " (" + error.response.data.error + ")";
+        }
+
+        Swal.fire({
+            icon: "error",
+            title: "Error!",
+            text: errorMessage,
+            confirmButtonColor: "#dc3545",
+        });
+    } finally {
+        isLoading.value = false;
+    }
 };
 
 </script>
@@ -296,6 +355,7 @@ const submitForm = () => {
                                     <div class="col-md-6">
                                         <label for="discount_value" class="form-label">Discount Value</label>
                                         <InputNumber v-model="form.discount_value" inputId="discount_value" class="w-100" :min="0" :max="form.discount_type === 'percentage' ? 100 : courseFee" />
+                                        <small v-if="errors.discount_value" class="text-danger mt-1">{{ errors.discount_value }}</small>
                                     </div>
                                     <!-- Final Amount -->
                                     <div class="col-12">
@@ -337,6 +397,7 @@ const submitForm = () => {
                                             <small v-if="!form.advance_amount" class="text-warning fw-semibold mt-1">
                                                 An advance payment is required for instalment plans.
                                             </small>
+                                            <small v-if="errors.advance_amount" class="text-danger mt-1">{{ errors.advance_amount }}</small>
                                         </div>
                                         <div class="col-md-4" v-if="form.payment_plan === '3-instalments' || form.payment_plan === '4-instalments'">
                                             <label for="instalment_1_percentage" class="form-label">Instalment 1 (%)</label>
@@ -394,14 +455,17 @@ const submitForm = () => {
                                     <div class="col-md-6">
                                         <label for="enrollment_date" class="form-label">Enrollment Date</label>
                                         <Calendar v-model="form.enrollment_date" inputId="enrollment_date" dateFormat="yy-mm-dd" class="w-100" />
+                                        <small v-if="errors.enrollment_date" class="text-danger mt-1">{{ errors.enrollment_date }}</small>
                                     </div>
                                     <div class="col-md-6">
                                         <label for="status" class="form-label">Enrollment Status</label>
                                         <Select v-model="form.status" :options="['Active', 'Completed', 'Cancelled']" placeholder="Select status" class="w-100" />
+                                        <small v-if="errors.status" class="text-danger mt-1">{{ errors.status }}</small>
                                     </div>
                                     <div class="col-12">
                                         <label for="notes" class="form-label">Notes / Comments</label>
                                         <Textarea v-model="form.notes" id="notes" rows="3" class="w-100" autoResize />
+                                        <small v-if="errors.notes" class="text-danger mt-1">{{ errors.notes }}</small>
                                     </div>
                                 </div>
                             </div>

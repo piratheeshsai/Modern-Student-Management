@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('enrollment_id')->constrained()->onDelete('cascade');
             $table->decimal('amount', 10, 2);
             $table->string('payment_type'); // Advance, 1st Installment, etc.
-            $table->date('due_date');
+            $table->date('due_date')->nullable();
             $table->string('status')->default('pending');
             $table->timestamps();
         });

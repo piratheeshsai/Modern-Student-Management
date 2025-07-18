@@ -19,8 +19,12 @@ return new class extends Migration
             $table->string('status')->default('active');
             $table->foreignId('branch_id')->constrained()->onDelete('cascade');
             $table->foreignId('created_by')->constrained('users')->onDelete('cascade');
-            $table->decimal('discount_amount', 8, 2)->default(0.00);
+
             $table->decimal('total_amount', 8, 2)->default(0.00);
+            $table->string('payment_type')->default('full'); // full, installment, etc.
+            $table->string('discount_type')->nullable(); // fixed, percentage
+            $table->decimal('discount_value', 8, 2)->nullable(); // e.g., 100.00 or 10.00 for percentage
+            $table->string('note')->nullable();
             $table->timestamps();
         });
     }

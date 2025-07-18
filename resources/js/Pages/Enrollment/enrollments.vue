@@ -9,7 +9,7 @@
                     class="bg-gradient-dark shadow-dark border-radius-lg pt-4 pb-3 d-flex flex-wrap justify-content-between align-items-center px-3">
                     <h5 class="text-white mb-2 mb-md-0">Enrollments Management</h5>
                     <div class="d-flex gap-2 flex-wrap">
-                        <Button icon="pi pi-plus" label="Add Enrollment" @click="newEnrollment"
+                        <Button icon="pi pi-plus" label="Add Enrollment" @click="navigateToEnrollmentCreate"
                             class="gradient-white-btn text-dark px-3 py-2 fw-bold" style="min-width: 140px;" />
                         <Button icon="pi pi-download" label="Export" @click="exportCSV()"
                             class="gradient-white-btn text-dark px-3 py-2 fw-bold" style="min-width: 120px;" />
@@ -127,185 +127,7 @@
         </div>
 
         <!-- Modal -->
-        <div class="modal fade" :class="{ show: isModalOpen, 'd-block': isModalOpen }" tabindex="-1" role="dialog"
-            aria-labelledby="courseModalLabel" :aria-hidden="!isModalOpen"
-            :style="{ backgroundColor: isModalOpen ? 'rgba(0,0,0,0.5)' : '' }">
-            <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
-                <div class="modal-content border-0 shadow-lg">
-                    <div class="modal-header bg-gradient-dark text-white border-0">
-                        <h5 class="modal-title text-white" id="EnrollmentModalLabel">
-                            <i class="fas fa-graduation-cap me-2"></i>
-                            {{ isEditMode ? 'Edit Enrollment' : 'Create New Enrollment' }}
-                        </h5>
-                        <button type="button" class="btn-close btn-close-white" @click="closeModal"
-                            aria-label="Close"></button>
-                    </div>
 
-                    <form @submit.prevent="submitForm">
-                        <div class="modal-body p-5" style="background-color: #f8f9fa;">
-                            <div class="row g-4">
-                                <!-- Student Dropdown -->
-                                <div class="col-md-6">
-                                    <label for="studentSelect" class="form-label fw-semibold text-dark mb-2">
-                                        Student <span class="text-danger">*</span>
-                                    </label>
-                                    <Select
-                                        v-model="enrollmentForm.student_id"
-                                        :options="verifiedStudents"
-                                        filter
-                                        optionLabel="display_name"
-                                        optionValue="id"
-                                        placeholder="Select a Student"
-                                        class="w-full"
-                                        :class="{ 'p-invalid': errors.student_id }"
-                                        style="min-height: 50px;"
-                                        appendTo="self">
-                                        <template #value="slotProps">
-                                            <div v-if="slotProps.value" class="flex items-center">
-                                                <div class="flex flex-col">
-                                                    <span class="font-medium">{{ getSelectedStudentName(slotProps.value) }}</span>
-                                                    <span class="text-sm text-gray-500">{{ getSelectedStudentNo(slotProps.value) }}</span>
-                                                </div>
-                                            </div>
-                                            <span v-else>
-                                                {{ slotProps.placeholder }}
-                                            </span>
-                                        </template>
-                                        <template #option="slotProps">
-                                            <div class="flex items-center p-2">
-                                                <div class="flex flex-col">
-                                                    <span class="font-medium">{{ slotProps.option.full_name }}</span>
-                                                    <span class="text-sm text-gray-500">{{ slotProps.option.student_no }}</span>
-                                                </div>
-                                            </div>
-                                        </template>
-                                    </Select>
-                                    <div v-if="errors.student_id" class="text-red-500 text-sm mt-1">
-                                        {{ errors.student_id }}
-                                    </div>
-                                </div>
-
-                                <!-- Course Dropdown -->
-                                <div class="col-md-6">
-                                    <label for="courseSelect" class="form-label fw-semibold text-dark mb-2">
-                                        Course <span class="text-danger">*</span>
-                                    </label>
-                                    <Select
-                                        v-model="enrollmentForm.course_id"
-                                        :options="courses"
-                                        filter
-                                        optionLabel="name"
-                                        optionValue="id"
-                                        placeholder="Select a Course"
-                                        class="w-full"
-                                        :class="{ 'p-invalid': errors.course_id }"
-                                        style="min-height: 50px;"
-                                        appendTo="self">
-                                        <template #value="slotProps">
-                                            <div v-if="slotProps.value" class="flex items-center">
-                                                <span>{{ getSelectedCourseName(slotProps.value) }}</span>
-                                            </div>
-                                            <span v-else>
-                                                {{ slotProps.placeholder }}
-                                            </span>
-                                        </template>
-                                        <template #option="slotProps">
-                                            <div class="flex items-center p-2">
-                                                <span>{{ slotProps.option.name }}</span>
-                                            </div>
-                                        </template>
-                                    </Select>
-                                    <div v-if="errors.course_id" class="text-red-500 text-sm mt-1">
-                                        {{ errors.course_id }}
-                                    </div>
-                                </div>
-
-                                <!-- Branch Dropdown -->
-                                <div class="col-md-6">
-                                    <label for="branchSelect" class="form-label fw-semibold text-dark mb-2">
-                                        Branch <span class="text-danger">*</span>
-                                    </label>
-                                    <select class="form-select form-select-lg border-0 shadow-sm rounded-3"
-                                        :class="{ 'is-invalid': errors.branch_id }" id="branchSelect" v-model="enrollmentForm.branch_id"
-                                        style="background-color: white; padding: 15px;">
-                                        <option value="">Select Branch</option>
-                                        <option v-for="branch in branches" :key="branch.id" :value="branch.id">
-                                            {{ branch.name }}
-                                        </option>
-                                    </select>
-                                    <div v-if="errors.branch_id" class="invalid-feedback mt-1">
-                                        {{ errors.branch_id }}
-                                    </div>
-                                </div>
-
-                                <!-- Enrollment Date -->
-                                <div class="col-md-6">
-                                    <label for="enrollmentDate" class="form-label fw-semibold text-dark mb-2">
-                                        Enrollment Date <span class="text-danger">*</span>
-                                    </label>
-                                    <input type="date" class="form-control form-control-lg border-0 shadow-sm rounded-3"
-                                        :class="{ 'is-invalid': errors.enrollment_date }" id="enrollmentDate"
-                                        v-model="enrollmentForm.enrollment_date"
-                                        style="background-color: white; padding: 15px;">
-                                    <div v-if="errors.enrollment_date" class="invalid-feedback mt-1">
-                                        {{ errors.enrollment_date }}
-                                    </div>
-                                </div>
-
-                                <!-- Payment Type -->
-                                <div class="col-md-6">
-                                    <label for="paymentType" class="form-label fw-semibold text-dark mb-2">
-                                        Payment Type <span class="text-danger">*</span>
-                                    </label>
-                                    <select class="form-select form-select-lg border-0 shadow-sm rounded-3"
-                                        :class="{ 'is-invalid': errors.payment_type }" id="paymentType" v-model="enrollmentForm.payment_type"
-                                        style="background-color: white; padding: 15px;">
-                                        <option value="">Select Payment Type</option>
-                                        <option value="full">Full Payment</option>
-                                        <option value="installment">Installment</option>
-                                        <option value="monthly">Monthly</option>
-                                    </select>
-                                    <div v-if="errors.payment_type" class="invalid-feedback mt-1">
-                                        {{ errors.payment_type }}
-                                    </div>
-                                </div>
-
-                                <!-- Optional Discount -->
-                                <div class="col-md-6">
-                                    <label for="discount" class="form-label fw-semibold text-dark mb-2">
-                                        Discount (Optional)
-                                    </label>
-                                    <input type="number" class="form-control form-control-lg border-0 shadow-sm rounded-3"
-                                        :class="{ 'is-invalid': errors.discount }" id="discount" v-model="enrollmentForm.discount"
-                                        placeholder="Enter discount amount" min="0" step="0.01"
-                                        style="background-color: white; padding: 15px;">
-                                    <div v-if="errors.discount" class="invalid-feedback mt-1">
-                                        {{ errors.discount }}
-                                    </div>
-
-
-                                </div>
-
-
-
-                            </div>
-                        </div>
-
-                        <div class="modal-footer border-0 p-4" style="background-color: #f8f9fa;">
-                            <button type="button" class="btn btn-light btn-lg px-4 me-3 rounded-3 shadow-sm"
-                                @click="closeModal" :disabled="isLoading" style="border: 1px solid #dee2e6;">
-                                Cancel
-                            </button>
-                            <button type="submit" class="btn btn-secondary btn-lg px-4 rounded-3 shadow-sm"
-                                :disabled="isLoading" style="background-color: #212529; border: none;">
-                                <span v-if="isLoading">Processing...</span>
-                                <span v-else>{{ isEditMode ? 'Update Enrollment' : 'Create Enrollment' }}</span>
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
     </MainLayout>
 </template>
 
@@ -314,12 +136,8 @@ import MainLayout from "@/Layouts/MainLayout.vue";
 import ToastContainer from "@/Components/ToastContainer.vue";
 import { ref, onMounted, watch } from "vue";
 import axios from "axios";
-import { router } from "@inertiajs/vue3";
 import Swal from "sweetalert2";
-
-
-import Select from 'primevue/select';
-
+import { router } from "@inertiajs/vue3";
 
 const toasts = ref([]);
 const isModalOpen = ref(false);
@@ -554,68 +372,21 @@ const confirmDelete = async (enrollment) => {
     }
 };
 
-const resetForm = () => {
-    enrollmentForm.value = {
-        id: null,
-        student_id: '',
-        course_id: '',
-        branch_id: '',
-        enrollment_date: '',
-        payment_type: '',
-        discount: 0,
-        status: 'active'
-    }
-    errors.value = {}
-}
 
-const newEnrollment = () => {
-    resetForm();
-    isEditMode.value = false;
-    isModalOpen.value = true;
-};
-
-const closeModal = () => {
-    isModalOpen.value = false;
-    resetForm();
-};
-
-const getSelectedStudentName = (studentId) => {
-    const student = verifiedStudents.value.find(s => s.id === studentId);
-    return student ? student.full_name : '';
-};
-
-const getSelectedStudentNo = (studentId) => {
-    const student = verifiedStudents.value.find(s => s.id === studentId);
-    return student ? student.student_no : '';
-};
-
-const getSelectedCourseName = (courseId) => {
-    const course = courses.value.find(c => c.id === courseId);
-    return course ? course.name : '';
-};
-
-const submitForm = async () => {
-    // Add your form submission logic here
-    console.log('Form submitted:', enrollmentForm.value);
-};
 
 
 onMounted(async () => {
     try {
         // Load all required data
         const [studentsRes, coursesRes, branchesRes] = await Promise.all([
-            axios.get('/api/students'), // Fetch all students
+            axios.get('/api/students'),
             axios.get('/api/courses'),
             axios.get('/api/branches')
         ]);
 
-        console.log('Students response:', studentsRes.data);
-        console.log('Courses response:', coursesRes.data);
-        console.log('Branches response:', branchesRes.data);
-
-        // Filter for verified students on the frontend and set display names
+        // Filter for verified students and set display names
         verifiedStudents.value = (studentsRes.data.data || [])
-            .filter(student => student.is_verified === true) // Filter here
+            .filter(student => student.is_verified === true)
             .map(student => ({
                 ...student,
                 full_name: `${student.first_name} ${student.last_name}`,
@@ -643,10 +414,6 @@ onMounted(async () => {
             }))
         ];
 
-        console.log('Verified students:', verifiedStudents.value);
-        console.log('Courses:', courses.value);
-        console.log('Branches:', branches.value);
-
     } catch (error) {
         console.error('Error loading data:', error);
         showToast('Error loading data', 'error');
@@ -655,6 +422,13 @@ onMounted(async () => {
     // Load enrollments
     loadEnrollments();
 });
+
+
+
+const navigateToEnrollmentCreate = () => {
+    router.visit('/enrollments/create')
+}
+
 </script>
 
 <style scoped>

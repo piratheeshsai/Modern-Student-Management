@@ -235,16 +235,13 @@
                                     <div class="form-group-custom">
                                         <label class="form-label-custom">Qualification</label>
                                         <div class="input-wrapper">
-                                            <multiselect
+                                            <Select
                                                 v-model="form.qualification"
                                                 :options="QualificationOptions.map(q => q.label)"
                                                 placeholder="Select your qualification"
-                                                :searchable="true"
-                                                :multiple="false"
-                                                :close-on-select="true"
-                                                :allow-empty="true"
-                                                :show-labels="false"
-                                                class="custom-multiselect"
+                                                filter
+                                                showClear
+                                                class="w-100"
                                             />
                                         </div>
                                     </div>
@@ -258,16 +255,13 @@
                                             <div class="form-group-custom">
                                                 <label class="form-label-custom">Course Name</label>
                                                 <div class="input-wrapper">
-                                                    <multiselect
+                                                    <Select
                                                         v-model="form.courseName"
                                                         :options="course.map(c => c.name)"
                                                         placeholder="Select a course"
-                                                        :searchable="true"
-                                                        :multiple="false"
-                                                        :close-on-select="true"
-                                                        :allow-empty="true"
-                                                        :show-labels="false"
-                                                        class="custom-multiselect"
+                                                        filter
+                                                        showClear
+                                                        class="w-100"
                                                     />
                                                 </div>
                                             </div>
@@ -276,16 +270,13 @@
                                             <div class="form-group-custom">
                                                 <label class="form-label-custom">Branch Name</label>
                                                 <div class="input-wrapper">
-                                                    <multiselect
+                                                    <Select
                                                         v-model="form.branchName"
                                                         :options="branch.map(b => b.name)"
                                                         placeholder="Select a branch"
-                                                        :searchable="true"
-                                                        :multiple="false"
-                                                        :close-on-select="true"
-                                                        :allow-empty="true"
-                                                        :show-labels="false"
-                                                        class="custom-multiselect"
+                                                        filter
+                                                        showClear
+                                                        class="w-100"
                                                     />
                                                 </div>
                                             </div>
@@ -378,16 +369,13 @@
                                     <div class="form-group-custom">
                                         <label class="form-label-custom">How did you hear about us?</label>
                                         <div class="input-wrapper">
-                                            <multiselect
+                                            <Select
                                                 v-model="form.refSource"
                                                 :options="referralSources.map(r => r.name)"
                                                 placeholder="Select how you heard about us"
-                                                :searchable="true"
-                                                :multiple="false"
-                                                :close-on-select="true"
-                                                :allow-empty="true"
-                                                :show-labels="false"
-                                                class="custom-multiselect"
+                                                filter
+                                                showClear
+                                                class="w-100"
                                             />
                                         </div>
                                     </div>
@@ -430,8 +418,7 @@
 <script setup lang="ts">
 import { reactive, ref, onMounted, onUnmounted, watch } from 'vue'
 import axios from 'axios'
-import Multiselect from 'vue-multiselect'
-import 'vue-multiselect/dist/vue-multiselect.min.css'
+import Select from 'primevue/select'; // Replaced Multiselect
 import Swal from 'sweetalert2'
 import { router } from '@inertiajs/vue3'
 
@@ -659,8 +646,8 @@ const submitForm = async () => {
             id_no: form.idNo.trim(),
             dob: form.dob,
             address: form.address.trim(),
-            school_name: form.schoolName?.trim() || null,
-            company_name: form.company?.trim() || null,
+            school_name: props.student ? null : form.schoolName?.trim() || null,
+            company_name: props.student ? null : form.company?.trim() || null,
             course_id: selectedCourse?.id,
             branch_id: selectedBranch?.id,
             referral_source_id: selectedRefSource?.id || null,
@@ -798,7 +785,6 @@ const closeMobileMenu = () => {
 onUnmounted(() => {
     document.body.style.overflow = '';
 });
-
 
 
 

@@ -13,6 +13,14 @@ class Enrollment extends Model
         'branch_id',
         'referral_source_id',
         'enrollment_date',
+        'discount_amount',
+        'total_amount',
+        'discount_value',
+        'discount_type',// Assuming this is a new field for the discount type
+        'payment_type',
+        'note',
+        'created_by',
+
     ];
 
     // Relationship to Student
@@ -38,4 +46,10 @@ class Enrollment extends Model
     {
         return $this->belongsTo(ReferralSource::class);
     }
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class, 'enrollment_id');
+    }
+
 }
