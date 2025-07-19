@@ -1,296 +1,272 @@
 <template>
     <MainLayout>
- <ToastContainer :toasts="toasts" :removeToast="removeToast" />
+        <ToastContainer :toasts="toasts" :removeToast="removeToast" />
 
+        <div class="student-management">
+            <!-- Header with Actions -->
+            <div class="card mb-4">
+                <div class="bg-gradient-dark shadow-dark border-radius-lg pt-4 pb-3 d-flex justify-content-between align-items-center px-3">
+                    <h5 class="text-white">Student Management</h5>
+                    <div class="d-flex gap-2">
+                        <Button
+                            icon="pi pi-plus"
+                            label="Add Student"
+                            @click="navigateToRegister"
+                            class="gradient-white-btn text-dark px-3 py-2 fw-bold" style="min-width: 140px;" />
 
-  <div class="student-management">
-    <!-- Header with Actions -->
-    <div class="card mb-4">
-      <div class="bg-gradient-dark shadow-dark border-radius-lg pt-4 pb-3 d-flex justify-content-between align-items-center px-3">
-        <h5 class="text-white">Student Management</h5>
-        <div class="d-flex gap-2">
-          <Button
-            icon="pi pi-plus"
-            label="Add Student"
-            @click="navigateToRegister"
-            class="btn btn-md btn-light text-dark"
-          />
-          <Button
-            icon="pi pi-download"
-            label="Export"
-            @click="exportCSV()"
-            class="btn btn-md btn-light text-dark"
-          />
-        </div>
-      </div>
-    </div>
-
-    <!-- DataTable -->
-    <DataTable
-      ref="dt"
-      v-model:filters="filters"
-      v-model:selection="selectedStudents"
-      :value="students"
-      :lazy="true"
-      :paginator="true"
-      :rows="10"
-      :totalRecords="totalRecords"
-      :loading="loading"
-      :rowsPerPageOptions="[5, 10, 25, 50]"
-      filterDisplay="menu"
-      responsiveLayout="scroll"
-      selectionMode="multiple"
-      dataKey="id"
-      sortMode="single"
-      :removableSort="true"
-      @page="onPage"
-      @sort="onSort"
-      @filter="onFilter"
-      class="p-datatable-sm"
-    >
-      <!-- Header -->
-      <template #header>
-        <div class="d-flex justify-content-between align-items-center">
-          <h6 class="m-0">Students ({{ totalRecords }})</h6>
-          <span class="p-input-icon-left">
-
-            <InputText
-              v-model="globalSearchValue"
-              placeholder="Global Search"
-            />
-          </span>
-        </div>
-      </template>
-
-      <!-- Selection Column -->
-      <Column selectionMode="multiple" headerStyle="width: 3rem"></Column>
-
-      <!-- Student Number -->
-      <Column
-        field="student_no"
-        header="Student No"
-        sortField="student_no"
-        :sortable="true"
-        style="min-width: 120px"
-      >
-        <template #body="slotProps">
-          {{ slotProps.data.student_no }}
-        </template>
-        <template #filter="{ filterModel }">
-          <InputText
-            v-model="filterModel.value"
-            type="text"
-            class="p-column-filter"
-            placeholder="Search by student no"
-          />
-        </template>
-      </Column>
-
-      <!-- Name -->
-      <Column
-        field="full_name"
-        header="Name"
-        sortField="first_name"
-        :sortable="true"
-        style="min-width: 200px"
-      >
-        <template #body="slotProps">
-          {{ slotProps.data.full_name }}
-        </template>
-        <template #filter="{ filterModel }">
-          <InputText
-            v-model="filterModel.value"
-            type="text"
-            class="p-column-filter"
-            placeholder="Search by name"
-          />
-        </template>
-      </Column>
-
-      <!-- Course -->
-      <Column
-        field="course.name"
-        header="Course"
-        sortField="course.name"
-        :sortable="true"
-        style="min-width: 150px"
-      >
-        <template #body="slotProps">
-          {{ slotProps.data.course?.name || 'N/A' }}
-        </template>
-        <template #filter="{ filterModel }">
-          <Dropdown
-            v-model="filterModel.value"
-            :options="courseOptions"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="Select Course"
-            class="p-column-filter"
-            showClear
-          />
-        </template>
-      </Column>
-
-      <!-- Branch -->
-      <Column
-        field="branch.name"
-        header="Branch"
-        sortField="branch.name"
-        :sortable="true"
-        style="min-width: 120px"
-      >
-        <template #body="slotProps">
-          {{ slotProps.data.branch?.name || 'N/A' }}
-        </template>
-        <template #filter="{ filterModel }">
-          <Dropdown
-            v-model="filterModel.value"
-            :options="branchOptions"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="Select Branch"
-            class="p-column-filter"
-            showClear
-          />
-        </template>
-      </Column>
-
-      <!-- Email -->
-      <Column
-        field="email"
-        header="Email"
-        sortField="email"
-        :sortable="true"
-        style="min-width: 200px"
-      >
-        <template #body="slotProps">
-          {{ slotProps.data.email }}
-        </template>
-      </Column>
-
-      <!-- Mobile -->
-      <Column
-        field="mobile"
-        header="Mobile"
-        sortField="mobile"
-        :sortable="true"
-        style="min-width: 120px"
-      >
-        <template #body="slotProps">
-          {{ slotProps.data.mobile }}
-        </template>
-      </Column>
-
-      <!-- Status -->
-      <Column
-        field="is_verified"
-        header="Status"
-        sortField="is_verified"
-        :sortable="true"
-        style="min-width: 100px"
-      >
-        <template #body="slotProps">
-          <Tag
-            :value="getStatusLabel(slotProps.data)"
-            :severity="getStatusSeverity(slotProps.data)"
-          />
-        </template>
-        <template #filter="{ filterModel }">
-          <Dropdown
-            v-model="filterModel.value"
-            :options="statusOptions"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="Select Status"
-            class="p-column-filter"
-            showClear
-          />
-        </template>
-      </Column>
-
-      <!-- Registration Date -->
-      <Column
-        field="created_at"
-        header="Registered"
-        sortField="created_at"
-        :sortable="true"
-        style="min-width: 120px"
-      >
-        <template #body="slotProps">
-          {{ formatDate(slotProps.data.created_at) }}
-        </template>
-        <template #filter="{ filterModel }">
-          <Calendar
-            v-model="filterModel.value"
-            dateFormat="mm/dd/yy"
-            placeholder="Select Date"
-            class="p-column-filter"
-          />
-        </template>
-      </Column>
-
-      <!-- Actions -->
-      <Column header="Actions" :exportable="false" style="min-width: 120px">
-        <template #body="slotProps">
-          <div class="d-flex justify-content-center">
-            <Dropdown
-              v-model="selectedAction"
-              :options="getActionOptions(slotProps.data)"
-              optionLabel="label"
-              optionValue="value"
-              class="p-dropdown-sm"
-              @change="handleActionSelect($event, slotProps.data)"
-            >
-              <template #value="slotProps">
-                <span class="p-dropdown-label">
-                  <i class="pi pi-ellipsis-v"></i>
-                </span>
-              </template>
-              <template #option="slotProps">
-                <div class="d-flex align-items-center gap-2">
-                  <i :class="slotProps.option.icon" :style="{ color: slotProps.option.color }"></i>
-                  <span>{{ slotProps.option.label }}</span>
+                        <Button
+                            icon="pi pi-download"
+                            label="Export"
+                            @click="exportCSV()"
+                            class="gradient-white-btn text-dark px-3 py-2 fw-bold" style="min-width: 140px;" />
+                    </div>
                 </div>
-              </template>
-            </Dropdown>
-          </div>
-        </template>
-      </Column>
+            </div>
 
-      <!-- Empty State -->
-      <template #empty>
-        <div class="text-center p-4">
-          <i class="pi pi-users" style="font-size: 3rem; color: #dee2e6;"></i>
-          <div class="mt-3">
-            <h6>No students found</h6>
-            <p class="text-muted">Try adjusting your search criteria</p>
-          </div>
+            <!-- DataTable with TableSpinner -->
+            <div class="datatable-wrapper">
+                <TableSpinner :loading="loading" loading-text="Loading Students..." />
+
+                <DataTable
+                    ref="dt"
+                    v-model:filters="filters"
+                    v-model:selection="selectedStudents"
+                    :value="students"
+                    :lazy="true"
+                    :paginator="true"
+                    :rows="10"
+                    :totalRecords="totalRecords"
+                    :loading="false"
+                    :rowsPerPageOptions="[5, 10, 25, 50]"
+                    filterDisplay="menu"
+                    responsiveLayout="scroll"
+                    selectionMode="multiple"
+                    dataKey="id"
+                    sortMode="single"
+                    :removableSort="true"
+                    @page="onPage"
+                    @sort="onSort"
+                    @filter="onFilter"
+                    class="p-datatable-sm">
+
+                    <!-- Header -->
+                    <template #header>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="m-0">Students ({{ totalRecords }})</h6>
+                            <span class="p-input-icon-left">
+                                <i class="pi pi-search" />
+                                <InputText
+                                    v-model="globalSearchValue"
+                                    placeholder="Global Search"
+                                />
+                            </span>
+                        </div>
+                    </template>
+
+                    <!-- Selection Column -->
+                    <Column selectionMode="multiple" headerStyle="width: 3rem"></Column>
+
+                    <!-- Student Number -->
+                    <Column
+                        field="student_no"
+                        header="Student No"
+                        sortField="student_no"
+                        :sortable="true"
+                        style="min-width: 120px">
+                        <template #body="slotProps">
+                            {{ slotProps.data.student_no }}
+                        </template>
+                        <template #filter="{ filterModel }">
+                            <InputText
+                                v-model="filterModel.value"
+                                type="text"
+                                class="p-column-filter"
+                                placeholder="Search by student no" />
+                        </template>
+                    </Column>
+
+                    <!-- Name -->
+                    <Column
+                        field="full_name"
+                        header="Name"
+                        sortField="first_name"
+                        :sortable="true"
+                        style="min-width: 200px">
+                        <template #body="slotProps">
+                            {{ slotProps.data.full_name }}
+                        </template>
+                        <template #filter="{ filterModel }">
+                            <InputText
+                                v-model="filterModel.value"
+                                type="text"
+                                class="p-column-filter"
+                                placeholder="Search by name" />
+                        </template>
+                    </Column>
+
+                    <!-- Course -->
+                    <Column
+                        field="course.name"
+                        header="Course"
+                        sortField="course.name"
+                        :sortable="false"
+                        style="min-width: 150px">
+                        <template #body="slotProps">
+                            {{ slotProps.data.course?.name || 'N/A' }}
+                        </template>
+                        <template #filter="{ filterModel }">
+                            <Dropdown
+                                v-model="filterModel.value"
+                                :options="courseOptions"
+                                optionLabel="label"
+                                optionValue="value"
+                                placeholder="Select Course"
+                                class="p-column-filter"
+                                showClear />
+                        </template>
+                    </Column>
+
+                    <!-- Branch -->
+                    <Column
+                        field="branch.name"
+                        header="Branch"
+                        sortField="branch.name"
+                        :sortable="false"
+                        style="min-width: 120px">
+                        <template #body="slotProps">
+                            {{ slotProps.data.branch?.name || 'N/A' }}
+                        </template>
+                        <template #filter="{ filterModel }">
+                            <Dropdown
+                                v-model="filterModel.value"
+                                :options="branchOptions"
+                                optionLabel="label"
+                                optionValue="value"
+                                placeholder="Select Branch"
+                                class="p-column-filter"
+                                showClear />
+                        </template>
+                    </Column>
+
+                    <!-- Email -->
+                    <Column
+                        field="email"
+                        header="Email"
+                        sortField="email"
+                        :sortable="true"
+                        style="min-width: 200px">
+                        <template #body="slotProps">
+                            {{ slotProps.data.email }}
+                        </template>
+                    </Column>
+
+                    <!-- Mobile -->
+                    <Column
+                        field="mobile"
+                        header="Mobile"
+                        sortField="mobile"
+                        :sortable="true"
+                        style="min-width: 120px">
+                        <template #body="slotProps">
+                            {{ slotProps.data.mobile }}
+                        </template>
+                    </Column>
+
+                    <!-- Status -->
+                    <Column
+                        field="is_verified"
+                        header="Status"
+                        sortField="is_verified"
+                        :sortable="true"
+                        style="min-width: 100px">
+                        <template #body="slotProps">
+                            <Tag
+                                :value="getStatusLabel(slotProps.data)"
+                                :severity="getStatusSeverity(slotProps.data)" />
+                        </template>
+                        <template #filter="{ filterModel }">
+                            <Dropdown
+                                v-model="filterModel.value"
+                                :options="statusOptions"
+                                optionLabel="label"
+                                optionValue="value"
+                                placeholder="Select Status"
+                                class="p-column-filter"
+                                showClear />
+                        </template>
+                    </Column>
+
+                    <!-- Registration Date -->
+                    <Column
+                        field="created_at"
+                        header="Registered"
+                        sortField="created_at"
+                        :sortable="true"
+                        style="min-width: 120px">
+                        <template #body="slotProps">
+                            {{ formatDate(slotProps.data.created_at) }}
+                        </template>
+                        <template #filter="{ filterModel }">
+                            <Calendar
+                                v-model="filterModel.value"
+                                dateFormat="mm/dd/yy"
+                                placeholder="Select Date"
+                                class="p-column-filter" />
+                        </template>
+                    </Column>
+
+                    <!-- Actions -->
+                    <Column header="Actions" :exportable="false" style="min-width: 80px">
+                        <template #body="slotProps">
+                            <Menu
+                                :model="getActionMenu(slotProps.data)"
+                                popup
+                                :ref="el => setMenuRef(el, slotProps.data.id)" />
+                            <Button
+                                icon="pi pi-ellipsis-v"
+                                class="p-button-rounded p-button-text p-button-sm"
+                                @click="openMenu($event, slotProps.data.id)"
+                                v-tooltip.top="'Actions'" />
+                        </template>
+                    </Column>
+
+                    <!-- Enhanced Empty State -->
+                    <template #empty>
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="pi pi-users"></i>
+                            </div>
+                            <h6 class="mt-3 mb-2">No Students Found</h6>
+                            <p class="text-muted">Try adjusting your search criteria or add a new student</p>
+                            <Button
+                                label="Add Student"
+                                icon="pi pi-plus"
+                                @click="navigateToRegister"
+                                class="p-button-outlined" />
+                        </div>
+                    </template>
+                </DataTable>
+            </div>
+
+            <!-- Toast Notification -->
+            <div class="toast-container" style="position: fixed; top: 1rem; right: 1rem; z-index: 9999;">
+                <div
+                    v-for="toast in toasts"
+                    :key="toast.id"
+                    :class="[
+                        'toast-item',
+                        toast.show ? 'toast-show' : '',
+                        toast.type === 'success' ? 'toast-success' : 'toast-error'
+                    ]"
+                    style="margin-bottom: 0.5rem; min-width: 220px; padding: 1rem; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); color: #fff; font-weight: 500;">
+                    <span v-if="toast.type === 'success'" style="margin-right: 0.5rem;">✅</span>
+                    <span v-else style="margin-right: 0.5rem;">❌</span>
+                    {{ toast.message }}
+                    <button @click="removeToast(toast.id)" style="background: none; border: none; color: #fff; float: right; font-size: 1.1rem; cursor: pointer;">×</button>
+                </div>
+            </div>
         </div>
-      </template>
-
-
-    </DataTable>
-
-    <!-- Toast Notification -->
-    <div class="toast-container" style="position: fixed; top: 1rem; right: 1rem; z-index: 9999;">
-      <div
-        v-for="toast in toasts"
-        :key="toast.id"
-        :class="[
-          'toast-item',
-          toast.show ? 'toast-show' : '',
-          toast.type === 'success' ? 'toast-success' : 'toast-error'
-        ]"
-        style="margin-bottom: 0.5rem; min-width: 220px; padding: 1rem; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); color: #fff; font-weight: 500;"
-      >
-        <span v-if="toast.type === 'success'" style="margin-right: 0.5rem;">✅</span>
-        <span v-else style="margin-right: 0.5rem;">❌</span>
-        {{ toast.message }}
-        <button @click="removeToast(toast.id)" style="background: none; border: none; color: #fff; float: right; font-size: 1.1rem; cursor: pointer;">×</button>
-      </div>
-    </div>
-  </div>
-  </MainLayout>
+    </MainLayout>
 </template>
 
 <script setup lang="ts">
@@ -298,8 +274,10 @@ import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { router } from '@inertiajs/vue3'
 import axios from 'axios'
 import MainLayout from '@/Layouts/MainLayout.vue'
+import TableSpinner from '@/Components/TableSpinner.vue'
 import Swal from 'sweetalert2'
 import ToastContainer from '@/Components/ToastContainer.vue'
+import Menu from 'primevue/menu';
 
 
 const toasts = ref([]);
@@ -406,6 +384,7 @@ const statusOptions = ref([
 ])
 
 // Add navigation method for the Add Student button
+
 const navigateToRegister = () => {
     router.visit('/students-register')
 }
@@ -685,6 +664,54 @@ const handleActionSelect = (event, student) => {
   selectedAction.value = null
 }
 
+const menuRefs = ref({});
+
+const setMenuRef = (el, id) => {
+    if (el) {
+        menuRefs.value[id] = el;
+    }
+};
+
+const openMenu = (event, id) => {
+    if (menuRefs.value[id]) {
+        menuRefs.value[id].toggle(event);
+    }
+};
+
+const getActionMenu = (student) => {
+    const actions = [
+        {
+            label: 'View',
+            icon: 'pi pi-eye',
+            command: () => viewStudent(student)
+        },
+        {
+            label: 'Edit',
+            icon: 'pi pi-pencil',
+            command: () => editStudent(student)
+        }
+    ];
+    if (!student.is_verified) {
+        actions.push({
+            label: 'Verify',
+            icon: 'pi pi-check-circle',
+            command: () => verifyStudent(student)
+        });
+    } else {
+        actions.push({
+            label: 'Unverify',
+            icon: 'pi pi-times-circle',
+            command: () => unverifyStudent(student)
+        });
+    }
+    actions.push({
+        label: 'Delete',
+        icon: 'pi pi-trash',
+        command: () => confirmDelete(student)
+    });
+    return actions;
+};
+
 // Load data on mount
 onMounted(async () => {
   // Load dropdown options
@@ -722,62 +749,99 @@ onMounted(async () => {
 
 <style scoped>
 .student-management {
-  padding: 1rem;
+    padding: 1rem;
 }
 
-.p-datatable .p-datatable-thead > tr > th {
-  background-color: #f8f9fa;
-  border-color: #dee2e6;
-  font-weight: 600;
+/* DataTable Wrapper for relative positioning */
+.datatable-wrapper {
+    position: relative;
+    min-height: 400px;
 }
 
-.p-datatable .p-datatable-tbody > tr {
-  transition: background-color 0.2s;
+/* Enhanced Empty State */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #6c757d;
 }
 
-.p-datatable .p-datatable-tbody > tr:hover {
-  background-color: #f8f9fa;
+.empty-icon {
+    font-size: 4rem;
+    color: #dee2e6;
+    margin-bottom: 1rem;
+}
+
+.empty-state h6 {
+    color: #495057;
+    font-weight: 600;
+}
+
+.empty-state p {
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+}
+
+.p-datatable {
+    border-radius: 13px !important;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.10), 0 1.5px 4px rgba(0, 0, 0, 0.08);
+}
+
+.p-datatable .p-datatable-thead>tr>th {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+    font-weight: 600;
+}
+
+.p-datatable .p-datatable-tbody>tr {
+    transition: background-color 0.2s;
+}
+
+.p-datatable .p-datatable-tbody>tr:hover {
+    background-color: #f8f9fa;
 }
 
 :deep(.custom-outline-btn:hover) {
-  background-color: #6c757d !important;
-  color: white !important;
+    background-color: #6c757d !important;
+    color: white !important;
 }
 
-/* Toast styles */
-.toast-container {
-  position: fixed;
-  top: 1rem;
-  right: 1rem;
-  z-index: 9999;
+.gradient-white-btn {
+    background: linear-gradient(90deg, #fff 0%, #f8f9fa 100%);
+    border: 1px solid #dee2e6 !important;
+    color: #212529 !important;
+    transition: background 0.2s, color 0.2s;
 }
 
-.toast-item {
-  margin-bottom: 0.5rem;
-  min-width: 220px;
-  padding: 1rem;
-  border-radius: 6px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  color: #fff;
-  font-weight: 500;
+.gradient-white-btn:hover,
+.gradient-white-btn:focus {
+    background: linear-gradient(90deg, #f1f3f4 0%, #e9ecef 100%) !important;
+    color: #212529 !important;
+    border-color: #bdbdbd !important;
+    box-shadow: none !important;
 }
 
 .toast-success {
-  background-color: #28a745;
+    background-color: #28a745;
 }
 
 .toast-error {
-  background-color: #dc3545;
+    background-color: #dc3545;
 }
 
 .toast-show {
-  opacity: 1;
-  transform: translateY(0);
+    opacity: 1;
+    transform: translateY(0);
 }
 
 .toast-item {
-  opacity: 0;
-  transform: translateY(-10px);
-  transition: opacity 0.3s, transform 0.3s;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: opacity 0.3s, transform 0.3s;
+}
+
+/* Ensure DataTable doesn't show its own loading */
+:deep(.p-datatable-loading-overlay) {
+    display: none !important;
 }
 </style>

@@ -16,7 +16,12 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('type'); // Registration, Payment, etc.
             $table->text('message');
-            $table->string('status')->default('unread');
+            $table->enum('status', ['pending', 'sent', 'failed'])->default('pending');
+            $table->timestamp('sent_at')->nullable(); // When the notification was sent
+            $table->text('response_data')->nullable(); // JSON or serialized data for additional information
+            $table->string('phone_number')->nullable(); // Optional link for more details
+            $table->unsignedBigInteger('student_id')->nullable(); // Optional link to a student record
+
             $table->timestamps();
         });
     }

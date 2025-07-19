@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Enrollment;
 use App\Models\Payment;
 use App\Models\Course;
+use App\Events\EnrollmentCreated; // ✅ Add this import
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -181,15 +182,14 @@ class EnrollmentController extends Controller
                 'student_id' => $request->student_id,
                 'course_id' => $request->course_id,
                 'enrollment_date' => $request->enrollment_date,
-                'status' => strtolower($request->status), // Convert to lowercase to match schema default
-                'branch_id' => Auth::user()->branch_id ?? 1, // Assuming user has branch_id or default to 1
+                'status' => strtolower($request->status),
+                'branch_id' => Auth::user()->branch_id ?? 1,
                 'created_by' => Auth::id(),
                 'discount_value' => $discountAmount,
                 'discount_type' => $request->discount_type,
                 'total_amount' => $totalAmount,
-                'payment_type' => $request->payment_plan, //
-                'note' => $request->notes,
-
+                'payment_plan' => $request->payment_plan,
+                'notes' => $request->notes,
             ]);
 
             // Create payment records
@@ -199,16 +199,19 @@ class EnrollmentController extends Controller
                     'amount' => $paymentData['amount'],
                     'payment_type' => $paymentData['type'],
                     'due_date' => $paymentData['due_date'],
-                    'status' => strtolower($paymentData['status']), // Convert to lowercase
+                    'status' => strtolower($paymentData['status']),
                     'payment_date' => $paymentData['status'] === 'Paid' ? now() : null,
                 ]);
             }
 
             DB::commit();
 
+           
+            event(new EnrollmentCreated($enrollment));
+
             return response()->json([
                 'success' => true,
-                'message' => 'Enrollment created successfully',
+                'message' => 'Enrollment created successfully! SMS notification will be sent shortly.',
                 'data' => $enrollment->load('student', 'course', 'payments')
             ], 201);
 
@@ -218,6 +221,87 @@ class EnrollmentController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to create enrollment',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function update(Request $request, $id): JsonResponse
+    {
+        $request->validate([
+            'student_id' => 'required|exists:students,id',
+            'course_id' => 'required|exists:courses,id',
+            'enrollment_date' => 'required|date',
+            'status' => 'required|in:Active,Completed,Cancelled',
+            'discount_type' => 'required|in:fixed,percentage',
+            'discount_value' => 'required|numeric|min:0',
+            'payment_plan' => 'required|in:full,2-instalments,3-instalments,4-instalments',
+            'advance_amount' => 'required_if:payment_plan,2-instalments,3-instalments,4-instalments|numeric|min:0',
+            'notes' => 'nullable|string',
+            'payments' => 'required|array|min:1',
+            'payments.*.type' => 'required|string',
+            'payments.*.amount' => 'required|numeric|min:0',
+            'payments.*.due_date' => 'required|date',
+            'payments.*.status' => 'required|in:Paid,Pending',
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            $enrollment = Enrollment::findOrFail($id);
+
+            // Update enrollment
+            $course = Course::findOrFail($request->course_id);
+
+            // Calculate discount amount
+            $discountAmount = 0;
+            if ($request->discount_type === 'percentage') {
+                $discountAmount = ($course->fees * $request->discount_value) / 100;
+            } else {
+                $discountAmount = $request->discount_value;
+            }
+
+            // Calculate total amount
+            $totalAmount = $course->fees - $discountAmount;
+
+            $enrollment->update([
+                'student_id' => $request->student_id,
+                'course_id' => $request->course_id,
+                'enrollment_date' => $request->enrollment_date,
+                'status' => strtolower($request->status),
+                'branch_id' => Auth::user()->branch_id ?? 1,
+                'discount_value' => $discountAmount,
+                'discount_type' => $request->discount_type,
+                'total_amount' => $totalAmount,
+                'payment_plan' => $request->payment_plan,
+                'notes' => $request->notes,
+            ]);
+
+            // Optionally, delete old payments and recreate them
+            $enrollment->payments()->delete();
+            foreach ($request->payments as $paymentData) {
+                Payment::create([
+                    'enrollment_id' => $enrollment->id,
+                    'amount' => $paymentData['amount'],
+                    'payment_type' => $paymentData['type'],
+                    'due_date' => $paymentData['due_date'],
+                    'status' => strtolower($paymentData['status']),
+                    'payment_date' => $paymentData['status'] === 'Paid' ? now() : null,
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Enrollment updated successfully',
+                'data' => $enrollment->load('student', 'course', 'payments')
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update enrollment',
                 'error' => $e->getMessage()
             ], 500);
         }

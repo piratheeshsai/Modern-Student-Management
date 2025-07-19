@@ -13,6 +13,11 @@ class Payment extends Model
         'due_date',
         'payment_type',
         'status',
+        'paid_date',
+        'notes',
+        'refund_amount',
+        'paid_amount',
+
     ];
 
     // Relationship to Enrollment
@@ -21,5 +26,5 @@ class Payment extends Model
         return $this->belongsTo(Enrollment::class);
     }
 
-    // Additional methods or relationships can be added here
+
 }

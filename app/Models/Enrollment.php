@@ -17,8 +17,8 @@ class Enrollment extends Model
         'total_amount',
         'discount_value',
         'discount_type',// Assuming this is a new field for the discount type
-        'payment_type',
-        'note',
+        'payment_plan', // New field for payment plan
+        'notes',
         'created_by',
 
     ];

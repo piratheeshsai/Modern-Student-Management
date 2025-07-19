@@ -1,7 +1,6 @@
 <?php
 
 return [
-
     /*
     |--------------------------------------------------------------------------
     | Third Party Services
@@ -31,4 +30,9 @@ return [
         ],
     ],
 
+    'textlk' => [
+        'api_token' => env('TEXTLK_API_TOKEN'),
+        'sender_id' => env('TEXTLK_SENDER_ID'),
+        'api_url' => env('TEXTLK_API_URL', 'https://app.text.lk/api/v3/sms/send'),
+    ],
 ];

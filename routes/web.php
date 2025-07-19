@@ -4,8 +4,11 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Branches\BranchController;
 use App\Http\Controllers\Courses\CoursesController;
 use App\Http\Controllers\Enrollment\EnrollmentController;
+use App\Http\Controllers\Payment\PaymentController;
 use App\Http\Controllers\Reference\ReferenceController;
 use App\Http\Controllers\students\StudentRegistrationController;
+use App\Models\Enrollment;
+use App\Models\Student;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -24,6 +27,7 @@ Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
+
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -31,6 +35,7 @@ Route::middleware('auth')->group(function () {
 });
 
 // Add your page routes (if you have any)
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/students', function () {
         return Inertia::render('Students/index');
@@ -38,8 +43,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 
     Route::get('/students-register', function () {
-    return Inertia::render('Students/register');
-});
+        return Inertia::render('Students/register');
+    });
 
     Route::get('/branches', function () {
         return Inertia::render('Branches/index');
@@ -48,6 +53,33 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/courses', function () {
         return Inertia::render('Course/index');
     })->name('courses.page');
+
+
+
+    Route::get('/payments', function () {
+           return Inertia::render('Payments/index');
+       })->name('payments.page');
+
+
+ Route::get('/attendance', function () {
+           return Inertia::render('Attendance/index');
+       })->name('attendance.page');
+
+
+    Route::get('/reference', function () {
+        return Inertia::render('Reference/reference');
+    })->name('reference.page');
+
+    Route::get('/students-register/{id}', function ($id) {
+        // Fetch the student by $id and pass to the page
+        $student = Student::with(['course', 'branch', 'referralSource'])->findOrFail($id);
+        return Inertia::render('Students/register', [
+            'student' => $student,
+            'isEditing' => true,
+        ]);
+    });
+
+
 
     Route::get('/enrollments', function () {
         return Inertia::render('Enrollment/enrollments');
@@ -58,18 +90,26 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('enrollments.create');
 
 
-    Route::get('/reference', function () {
-        return Inertia::render('Reference/reference');
-    })->name('reference.page');
+    Route::get('/enrollments/{id}/edit', function ($id) {
+        // Fetch the enrollment and pass to the page
+        $enrollment = Enrollment::with(['student', 'course', 'branch', 'payments'])->findOrFail($id);
+        return Inertia::render('Enrollment/create', [
+            'enrollment' => $enrollment,
+            'mode' => 'edit',
+        ]);
+    })->name('enrollments.edit.page');
 
-    Route::get('/students-register/{id}', function ($id) {
-    // Fetch the student by $id and pass to the page
-    $student = \App\Models\Student::with(['course', 'branch', 'referralSource'])->findOrFail($id);
-    return Inertia::render('Students/register', [
-        'student' => $student,
-        'isEditing' => true,
-    ]);
-});
+    Route::get('/enrollments/{id}/view', function ($id) {
+        $enrollment = Enrollment::with(['student', 'course', 'branch', 'payments'])->findOrFail($id);
+        return Inertia::render('Enrollment/create', [
+            'enrollment' => $enrollment,
+            'mode' => 'view',
+        ]);
+    })->name('enrollments.view.page');
+
+
+
+
 });
 
 // Public API routes (no auth required) - for reading data
@@ -79,6 +119,7 @@ Route::prefix('api')->group(function () {
     Route::get('students', [StudentRegistrationController::class, 'index'])->name('students.index');
     Route::get('reference', [ReferenceController::class, 'index'])->name('reference.index');
     Route::get('enrollments', [EnrollmentController::class, 'index'])->name('enrollments.index');
+    Route::get('payments', [PaymentController::class, 'index'])->name('payments.index');
 });
 
 // Protected API routes (auth required) - for data manipulation
@@ -110,6 +151,8 @@ Route::middleware(['auth'])->prefix('api')->group(function () {
     Route::post('enrollments', [EnrollmentController::class, 'store'])->name('enrollments.store');
     Route::put('enrollments/{id}', [EnrollmentController::class, 'update'])->name('enrollments.update');
     Route::delete('enrollments/{id}', [EnrollmentController::class, 'destroy'])->name('enrollments.destroy');
+    Route::get('enrollments/{id}', [EnrollmentController::class, 'show'])->name('enrollments.show');
+    Route::get('enrollments/{id}/edit', [EnrollmentController::class, 'edit'])->name('enrollments.edit');
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

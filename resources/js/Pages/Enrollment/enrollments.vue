@@ -17,98 +17,143 @@
                 </div>
             </div>
 
-            <!-- DataTable -->
-            <DataTable ref="dt" v-model:filters="filters" v-model:selection="selectedEnrollments" :value="enrollments"
-                :lazy="true" :paginator="true" :rows="10" :totalRecords="totalRecords" :loading="loading"
-                :rowsPerPageOptions="[5, 10, 25, 50]" filterDisplay="menu" responsiveLayout="scroll"
-                selectionMode="multiple" dataKey="id" sortMode="single" :removableSort="true" @page="onPage"
-                @sort="onSort" @filter="onFilter" class="p-datatable-sm">
-                <template #header>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h6 class="m-0">Enrollments ({{ totalRecords }})</h6>
-                        <span class="p-input-icon-left">
-                            <InputText v-model="globalSearchValue" placeholder="Global Search" />
-                        </span>
-                    </div>
-                </template>
+            <!-- DataTable with TableSpinner -->
+            <div class="datatable-wrapper">
+                <TableSpinner :loading="loading" loading-text="Loading Enrollments..." />
 
-                <!-- Enrollment ID -->
-                <Column field="id" header="Enrollment ID" sortField="id" :sortable="true" style="min-width: 100px">
-                    <template #body="slotProps">
-                        {{ slotProps.data.id }}
-                    </template>
-                </Column>
+                <DataTable
+                    ref="dt"
+                    v-model:filters="filters"
+                    v-model:selection="selectedEnrollments"
+                    :value="enrollments"
+                    :lazy="true"
+                    :paginator="true"
+                    :rows="10"
+                    :totalRecords="totalRecords"
+                    :loading="false"
+                    :rowsPerPageOptions="[5, 10, 25, 50]"
+                    filterDisplay="menu"
+                    responsiveLayout="scroll"
+                    selectionMode="multiple"
+                    dataKey="id"
+                    sortMode="single"
+                    :removableSort="true"
+                    @page="onPage"
+                    @sort="onSort"
+                    @filter="onFilter"
+                    class="p-datatable-sm">
 
-                <!-- Student Name -->
-                <Column field="student.full_name" header="Student Name" sortField="student.full_name" :sortable="true"
-                    style="min-width: 180px">
-                    <template #body="slotProps">
-                        {{ slotProps.data.student?.full_name || 'N/A' }}
-                    </template>
-                </Column>
-
-                <!-- Course Name -->
-                <Column field="course.name" header="Course Name" sortField="course.name" :sortable="true"
-                    style="min-width: 150px">
-                    <template #body="slotProps">
-                        {{ slotProps.data.course?.name || 'N/A' }}
-                    </template>
-                    <template #filter="{ filterModel }">
-                        <Dropdown v-model="filterModel.value" :options="courseOptions" optionLabel="label"
-                            optionValue="value" placeholder="Select Course" class="p-column-filter" showClear />
-                    </template>
-                </Column>
-
-                <!-- Status -->
-                <Column field="status" header="Status" sortField="status" :sortable="true" style="min-width: 100px">
-                    <template #body="slotProps">
-                        <Tag :value="slotProps.data.status"
-                            :severity="slotProps.data.status === 'active' ? 'success' : 'danger'" />
-                    </template>
-                    <template #filter="{ filterModel }">
-                        <Dropdown v-model="filterModel.value" :options="statusOptions" optionLabel="label"
-                            optionValue="value" placeholder="Select Status" class="p-column-filter" showClear />
-                    </template>
-                </Column>
-
-                <!-- Enrollment Date -->
-                <Column field="enrollment_date" header="Enrollment Date" sortField="enrollment_date" :sortable="true"
-                    style="min-width: 120px">
-                    <template #body="slotProps">
-                        {{ formatDate(slotProps.data.enrollment_date) }}
-                    </template>
-                    <template #filter="{ filterModel }">
-                        <Calendar v-model="filterModel.value" dateFormat="mm/dd/yy" placeholder="Select Date"
-                            class="p-column-filter" />
-                    </template>
-                </Column>
-
-                <!-- Branch -->
-                <Column field="branch.name" header="Branch" sortField="branch.name" :sortable="true"
-                    style="min-width: 120px">
-                    <template #body="slotProps">
-                        {{ slotProps.data.branch?.name || 'N/A' }}
-                    </template>
-                    <template #filter="{ filterModel }">
-                        <Dropdown v-model="filterModel.value" :options="branchOptions" optionLabel="label"
-                            optionValue="value" placeholder="Select Branch" class="p-column-filter" showClear />
-                    </template>
-                </Column>
-
-                <!-- Actions -->
-                <Column header="Actions" :exportable="false" style="min-width: 120px">
-                    <template #body="slotProps">
-                        <div class="d-flex gap-1">
-                            <Button icon="pi pi-pencil"
-                                class="p-button-rounded p-button-text p-button-sm p-button-warning"
-                                @click="editEnrollment(slotProps.data)" v-tooltip.top="'Edit'" />
-                            <Button icon="pi pi-trash"
-                                class="p-button-rounded p-button-text p-button-sm p-button-danger"
-                                @click="confirmDelete(slotProps.data)" v-tooltip.top="'Delete'" />
+                    <template #header>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="m-0">Enrollments ({{ totalRecords }})</h6>
+                            <span class="p-input-icon-left">
+                                <i class="pi pi-search" />
+                                <InputText v-model="globalSearchValue" placeholder="Global Search" />
+                            </span>
                         </div>
                     </template>
-                </Column>
-            </DataTable>
+
+                    <!-- Enrollment ID -->
+                    <Column field="id" header="Enrollment ID" sortField="id" :sortable="true" style="min-width: 100px">
+                        <template #body="slotProps">
+                            {{ slotProps.data.id }}
+                        </template>
+                    </Column>
+
+                    <!-- Student Name -->
+                    <Column field="student.full_name" header="Student Name" sortField="student.full_name" :sortable="false"
+                        style="min-width: 180px">
+                        <template #body="slotProps">
+                            {{ slotProps.data.student?.full_name || 'N/A' }}
+                        </template>
+                        <template #filter="{ filterModel }">
+                            <InputText v-model="filterModel.value" placeholder="Search Student" class="p-column-filter" />
+                        </template>
+                    </Column>
+
+                    <!-- Course Name -->
+                    <Column field="course.name" header="Course Name" sortField="course.name" :sortable="false"
+                        style="min-width: 150px">
+                        <template #body="slotProps">
+                            {{ slotProps.data.course?.name || 'N/A' }}
+                        </template>
+                        <template #filter="{ filterModel }">
+                            <Dropdown v-model="filterModel.value" :options="courseOptions" optionLabel="label"
+                                optionValue="value" placeholder="Select Course" class="p-column-filter" showClear />
+                        </template>
+                    </Column>
+
+                    <!-- Status -->
+                    <Column field="status" header="Status" sortField="status" :sortable="true" style="min-width: 100px">
+                        <template #body="slotProps">
+                            <Tag :value="slotProps.data.status"
+                                :severity="slotProps.data.status === 'active' ? 'success' : 'danger'" />
+                        </template>
+                        <template #filter="{ filterModel }">
+                            <Dropdown v-model="filterModel.value" :options="statusOptions" optionLabel="label"
+                                optionValue="value" placeholder="Select Status" class="p-column-filter" showClear />
+                        </template>
+                    </Column>
+
+                    <!-- Enrollment Date -->
+                    <Column field="enrollment_date" header="Enrollment Date" sortField="enrollment_date" :sortable="true"
+                        style="min-width: 120px">
+                        <template #body="slotProps">
+                            {{ formatDate(slotProps.data.enrollment_date) }}
+                        </template>
+                        <template #filter="{ filterModel }">
+                            <Calendar v-model="filterModel.value" dateFormat="mm/dd/yy" placeholder="Select Date"
+                                class="p-column-filter" />
+                        </template>
+                    </Column>
+
+                    <!-- Branch -->
+                    <Column field="branch.name" header="Branch" sortField="branch.name" :sortable="false"
+                        style="min-width: 120px">
+                        <template #body="slotProps">
+                            {{ slotProps.data.branch?.name || 'N/A' }}
+                        </template>
+                        <template #filter="{ filterModel }">
+                            <Dropdown v-model="filterModel.value" :options="branchOptions" optionLabel="label"
+                                optionValue="value" placeholder="Select Branch" class="p-column-filter" showClear />
+                        </template>
+                    </Column>
+
+                    <!-- Actions -->
+                    <Column header="Actions" :exportable="false" style="min-width: 80px">
+                        <template #body="slotProps">
+                            <Menu
+                                :model="getActionMenu(slotProps.data)"
+                                popup
+                                :ref="el => setMenuRef(el, slotProps.data.id)"
+                            />
+                            <Button
+                                icon="pi pi-ellipsis-v"
+                                class="p-button-rounded p-button-text p-button-sm"
+                                @click="openMenu($event, slotProps.data.id)"
+                                v-tooltip.top="'Actions'"
+                            />
+                        </template>
+                    </Column>
+
+                    <!-- Empty State -->
+                    <template #empty>
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="pi pi-graduation-cap"></i>
+                            </div>
+                            <h6 class="mt-3 mb-2">No Enrollments Found</h6>
+                            <p class="text-muted">Try adjusting your filters or add a new enrollment</p>
+                            <Button
+                                label="Add Enrollment"
+                                icon="pi pi-plus"
+                                @click="navigateToEnrollmentCreate"
+                                class="p-button-outlined"
+                            />
+                        </div>
+                    </template>
+                </DataTable>
+            </div>
 
             <!-- Toast Notification -->
             <div class="toast-container" style="position: fixed; top: 1rem; right: 1rem; z-index: 9999;">
@@ -125,19 +170,25 @@
                 </div>
             </div>
         </div>
-
-        <!-- Modal -->
-
     </MainLayout>
 </template>
 
 <script setup lang="ts">
 import MainLayout from "@/Layouts/MainLayout.vue";
 import ToastContainer from "@/Components/ToastContainer.vue";
+import TableSpinner from "@/Components/TableSpinner.vue";
 import { ref, onMounted, watch } from "vue";
 import axios from "axios";
 import Swal from "sweetalert2";
 import { router } from "@inertiajs/vue3";
+import Menu from 'primevue/menu';
+import DataTable from 'primevue/datatable';
+import Column from 'primevue/column';
+import InputText from 'primevue/inputtext';
+import Button from 'primevue/button';
+import Dropdown from 'primevue/dropdown';
+import Calendar from 'primevue/calendar';
+import Tag from 'primevue/tag';
 
 const toasts = ref([]);
 const isModalOpen = ref(false);
@@ -423,7 +474,37 @@ onMounted(async () => {
     loadEnrollments();
 });
 
+const menuRefs = ref({});
 
+const setMenuRef = (el, id) => {
+    if (el) {
+        menuRefs.value[id] = el;
+    }
+};
+
+const openMenu = (event, id) => {
+    if (menuRefs.value[id]) {
+        menuRefs.value[id].toggle(event);
+    }
+};
+
+const getActionMenu = (row) => [
+    {
+        label: 'Edit',
+        icon: 'pi pi-pencil',
+        command: () => router.visit(`/enrollments/${row.id}/edit`)
+    },
+    {
+        label: 'View',
+        icon: 'pi pi-eye',
+        command: () => router.visit(`/enrollments/${row.id}/view`)
+    },
+    {
+        label: 'Delete',
+        icon: 'pi pi-trash',
+        command: () => confirmDelete(row)
+    }
+];
 
 const navigateToEnrollmentCreate = () => {
     router.visit('/enrollments/create')
@@ -434,6 +515,35 @@ const navigateToEnrollmentCreate = () => {
 <style scoped>
 .student-management {
     padding: 1rem;
+}
+
+/* DataTable Wrapper for relative positioning */
+.datatable-wrapper {
+    position: relative;
+    min-height: 400px;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #6c757d;
+}
+
+.empty-icon {
+    font-size: 4rem;
+    color: #dee2e6;
+    margin-bottom: 1rem;
+}
+
+.empty-state h6 {
+    color: #495057;
+    font-weight: 600;
+}
+
+.empty-state p {
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
 }
 
 .p-datatable {
@@ -495,6 +605,8 @@ const navigateToEnrollmentCreate = () => {
     transition: opacity 0.3s, transform 0.3s;
 }
 
-
-
+/* Ensure DataTable doesn't show its own loading */
+:deep(.p-datatable-loading-overlay) {
+    display: none !important;
+}
 </style>

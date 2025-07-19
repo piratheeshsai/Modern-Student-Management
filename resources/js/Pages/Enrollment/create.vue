@@ -10,7 +10,62 @@ import Checkbox from 'primevue/checkbox';
 import Textarea from 'primevue/textarea';
 import Button from 'primevue/button';
 import Calendar from 'primevue/calendar';
-import Swal from 'sweetalert2'; // Make sure you have this import
+import Swal from 'sweetalert2';
+
+const props = defineProps({
+    enrollment: Object,
+    mode: String
+});
+
+
+
+
+
+const toasts = ref([]);
+
+
+const showToast = (message: string, type: "success" | "error" = "success") => {
+    const id = Date.now();
+    const toast = {
+        id,
+        message,
+        type,
+        show: false,
+    };
+
+    toasts.value.push(toast);
+
+    // Trigger animation
+    setTimeout(() => {
+        const toastElement = toasts.value.find((t) => t.id === id);
+        if (toastElement) toastElement.show = true;
+    }, 100);
+
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        removeToast(id);
+    }, 10000);
+};
+
+const removeToast = (id: number) => {
+    const index = toasts.value.findIndex((t) => t.id === id);
+    if (index > -1) {
+        toasts.value[index].show = false;
+        setTimeout(() => {
+            toasts.value.splice(index, 1);
+        }, 300);
+    }
+};
+
+
+
+
+
+
+
+
+
+
 
 // --- TYPE DEFINITIONS ---
 interface EnrollmentErrors {
@@ -68,6 +123,44 @@ onMounted(async () => {
     }
 });
 
+watch(
+    [() => props.enrollment, courses, students],
+    ([enrollment, coursesList, studentsList]) => {
+        if (enrollment && coursesList.length && studentsList.length) {
+            let advance = 0;
+            if (enrollment.payments && Array.isArray(enrollment.payments)) {
+                const adv = enrollment.payments.find(
+                    p => p.payment_type === 'Advance' || p.type === 'Advance'
+                );
+                if (adv) advance = adv.amount;
+            }
+            // Normalize status to match Select options
+            let normalizedStatus = 'Active';
+            if (enrollment.status) {
+                const status = enrollment.status.charAt(0).toUpperCase() + enrollment.status.slice(1).toLowerCase();
+                if (['Active', 'Completed', 'Cancelled'].includes(status)) {
+                    normalizedStatus = status;
+                }
+            }
+            form.value = {
+                ...form.value,
+                ...enrollment,
+                advance_amount: advance,
+                enrollment_date: enrollment.enrollment_date ? new Date(enrollment.enrollment_date) : new Date(),
+                status: normalizedStatus,
+                payments: enrollment.payments
+                    ? enrollment.payments.map(p => ({
+                        ...p,
+                        due_date: p.due_date ? new Date(p.due_date) : null
+                    }))
+                    : []
+            };
+            selectedCourse.value = coursesList.find(c => c.id === form.value.course_id) || null;
+        }
+    },
+    { immediate: true }
+);
+
 // --- COMPUTED PROPERTIES ---
 const courseFee = computed(() => {
     // Use 'fees' to match your database schema
@@ -91,6 +184,8 @@ const remainingForInstalments = computed(() => {
     const remaining = finalPayableAmount.value - form.value.advance_amount;
     return remaining > 0 ? remaining : 0;
 });
+
+const isReadOnly = computed(() => props.mode === 'view');
 
 // --- WATCHERS to react to form changes ---
 watch(() => form.value.course_id, (newId) => {
@@ -241,18 +336,30 @@ const submitForm = async () => {
     errors.value = {};
 
     try {
-        const response = await axios.post('/api/enrollments', payload);
-
-        Swal.fire({
-            icon: "success",
-            title: "Success!",
-            text: "Enrollment has been created successfully.",
-            confirmButtonColor: "#28a745",
-            timer: 4000,
-            showConfirmButton: true,
-        });
-
-        // Optionally reset form or redirect
+        if (props.mode === 'edit' && props.enrollment?.id) {
+            // UPDATE existing enrollment
+            await axios.put(`/api/enrollments/${props.enrollment.id}`, payload);
+            Swal.fire({
+                icon: "success",
+                title: "Success!",
+                text: "Enrollment has been updated successfully.",
+                confirmButtonColor: "#28a745",
+                timer: 4000,
+                showConfirmButton: true,
+            });
+        } else {
+            // CREATE new enrollment
+            await axios.post('/api/enrollments', payload);
+            Swal.fire({
+                icon: "success",
+                title: "Success!",
+                text: "Enrollment has been created successfully.",
+                confirmButtonColor: "#28a745",
+                timer: 4000,
+                showConfirmButton: true,
+            });
+        }
+        // Optionally redirect or reset
         // router.visit('/enrollments');
     } catch (error) {
         let errorMessage = "An error occurred while submitting the enrollment.";
@@ -285,13 +392,23 @@ const submitForm = async () => {
 
 <template>
     <MainLayout>
-        <div class="bg-light">
-            <div class="container py-4 py-md-5">
-                <div class="card shadow-lg border-0">
-                    <!-- Header -->
-                    <div class="card-header bg-dark text-white">
-                        <h5 class="mb-0">Create New Enrollment</h5>
-                    </div>
+        <ToastContainer :toasts="toasts" :removeToast="removeToast" />
+        <div class="container-fluid py-2">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card my-4">
+                        <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
+                            <div
+                                class="bg-gradient-dark shadow-dark border-radius-lg pt-4 pb-3 d-flex justify-content-between align-items-center px-3">
+                                <h6 class="text-white text-capitalize m-0">
+                                    {{ props.mode === 'edit' ? 'Edit Enrollment' : 'Create New Enrollment' }}
+                                </h6>
+
+                            </div>
+                        </div>
+
+                        <div class="card-body px-0 pb-2">
+
 
                     <form @submit.prevent="submitForm" class="card-body p-4 p-md-5">
                         <div class="vstack gap-5">
@@ -302,10 +419,12 @@ const submitForm = async () => {
                                 <div class="row">
                                     <div class="col-12">
                                         <label for="student" class="form-label">Student (ID / NIC / Name)</label>
-                                        <Select v-model="form.student_id" :options="students" filter optionLabel="display_name"
-                                            optionValue="id" placeholder="Search for a verified student..." class="w-100"
-                                            :class="{ 'p-invalid': errors.student_id }" />
-                                        <small v-if="errors.student_id" class="text-danger mt-1">{{ errors.student_id }}</small>
+                                        <Select v-model="form.student_id" :options="students" filter
+                                            optionLabel="display_name" optionValue="id"
+                                            placeholder="Search for a verified student..." class="w-100"
+                                            :class="{ 'p-invalid': errors.student_id }" :disabled="isReadOnly" />
+                                        <small v-if="errors.student_id" class="text-danger mt-1">{{ errors.student_id
+                                            }}</small>
                                     </div>
                                 </div>
                             </div>
@@ -317,10 +436,11 @@ const submitForm = async () => {
                                     <!-- Course Info -->
                                     <div class="col-md-6">
                                         <label for="course" class="form-label">Course</label>
-                                        <Select v-model="form.course_id" :options="courses" optionLabel="name" optionValue="id"
-                                            placeholder="Select a course" class="w-100"
-                                            :class="{ 'p-invalid': errors.course_id }" />
-                                        <small v-if="errors.course_id" class="text-danger mt-1">{{ errors.course_id }}</small>
+                                        <Select v-model="form.course_id" :options="courses" optionLabel="name"
+                                            optionValue="id" placeholder="Select a course" class="w-100"
+                                            :class="{ 'p-invalid': errors.course_id }" :disabled="isReadOnly" />
+                                        <small v-if="errors.course_id" class="text-danger mt-1">{{ errors.course_id
+                                            }}</small>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="row">
@@ -343,25 +463,31 @@ const submitForm = async () => {
                                         <label class="form-label">Discount Type</label>
                                         <div class="d-flex gap-4 pt-2">
                                             <div class="form-check">
-                                                <RadioButton v-model="form.discount_type" inputId="d_fixed" name="discountType" value="fixed" />
+                                                <RadioButton v-model="form.discount_type" inputId="d_fixed"
+                                                    name="discountType" value="fixed" :disabled="isReadOnly" />
                                                 <label for="d_fixed" class="ms-2">Fixed (LKR)</label>
                                             </div>
                                             <div class="form-check">
-                                                <RadioButton v-model="form.discount_type" inputId="d_percent" name="discountType" value="percentage" />
+                                                <RadioButton v-model="form.discount_type" inputId="d_percent"
+                                                    name="discountType" value="percentage" :disabled="isReadOnly" />
                                                 <label for="d_percent" class="ms-2">Percentage (%)</label>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <label for="discount_value" class="form-label">Discount Value</label>
-                                        <InputNumber v-model="form.discount_value" inputId="discount_value" class="w-100" :min="0" :max="form.discount_type === 'percentage' ? 100 : courseFee" />
-                                        <small v-if="errors.discount_value" class="text-danger mt-1">{{ errors.discount_value }}</small>
+                                        <InputNumber v-model="form.discount_value" inputId="discount_value"
+                                            class="w-100" :min="0"
+                                            :max="form.discount_type === 'percentage' ? 100 : courseFee" :disabled="isReadOnly" />
+                                        <small v-if="errors.discount_value" class="text-danger mt-1">{{
+                                            errors.discount_value }}</small>
                                     </div>
                                     <!-- Final Amount -->
                                     <div class="col-12">
                                         <div class="info-display bg-success-subtle border-success-subtle">
                                             <label class="info-label text-success-emphasis">Final Payable Amount</label>
-                                            <p class="info-value h4 fw-bold text-success">LKR {{ finalPayableAmount.toLocaleString() }}</p>
+                                            <p class="info-value h4 fw-bold text-success">LKR {{
+                                                finalPayableAmount.toLocaleString() }}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -373,44 +499,60 @@ const submitForm = async () => {
                                 <div class="vstack gap-4">
                                     <div class="d-flex flex-wrap gap-4">
                                         <div class="form-check">
-                                            <RadioButton v-model="form.payment_plan" inputId="p_full" name="paymentPlan" value="full" />
+                                            <RadioButton v-model="form.payment_plan" inputId="p_full" name="paymentPlan"
+                                                value="full" :disabled="isReadOnly" />
                                             <label for="p_full" class="ms-2">Full Payment</label>
                                         </div>
                                         <div class="form-check">
-                                            <RadioButton v-model="form.payment_plan" inputId="p_2_inst" name="paymentPlan" value="2-instalments" />
+                                            <RadioButton v-model="form.payment_plan" inputId="p_2_inst"
+                                                name="paymentPlan" value="2-instalments" :disabled="isReadOnly" />
                                             <label for="p_2_inst" class="ms-2">2 Instalments</label>
                                         </div>
                                         <div class="form-check">
-                                            <RadioButton v-model="form.payment_plan" inputId="p_3_inst" name="paymentPlan" value="3-instalments" />
+                                            <RadioButton v-model="form.payment_plan" inputId="p_3_inst"
+                                                name="paymentPlan" value="3-instalments" :disabled="isReadOnly" />
                                             <label for="p_3_inst" class="ms-2">3 Instalments</label>
                                         </div>
                                         <div class="form-check">
-                                            <RadioButton v-model="form.payment_plan" inputId="p_4_inst" name="paymentPlan" value="4-instalments" />
+                                            <RadioButton v-model="form.payment_plan" inputId="p_4_inst"
+                                                name="paymentPlan" value="4-instalments" :disabled="isReadOnly" />
                                             <label for="p_4_inst" class="ms-2">4 Instalments</label>
                                         </div>
                                     </div>
 
-                                    <div v-if="form.payment_plan.includes('instalment')" class="row g-3 pt-4 border-top">
+                                    <div v-if="form.payment_plan.includes('instalment')"
+                                        class="row g-3 pt-4 border-top">
                                         <div class="col-md-4">
                                             <label for="advance_amount" class="form-label">Advance Amount</label>
-                                            <InputNumber v-model="form.advance_amount" inputId="advance_amount" class="w-100" mode="currency" currency="LKR" locale="en-US" />
+                                            <InputNumber v-model="form.advance_amount" inputId="advance_amount"
+                                                class="w-100" mode="currency" currency="LKR" locale="en-US"
+                                                :disabled="isReadOnly" />
                                             <small v-if="!form.advance_amount" class="text-warning fw-semibold mt-1">
                                                 An advance payment is required for instalment plans.
                                             </small>
-                                            <small v-if="errors.advance_amount" class="text-danger mt-1">{{ errors.advance_amount }}</small>
+                                            <small v-if="errors.advance_amount" class="text-danger mt-1">{{
+                                                errors.advance_amount }}</small>
                                         </div>
-                                        <div class="col-md-4" v-if="form.payment_plan === '3-instalments' || form.payment_plan === '4-instalments'">
-                                            <label for="instalment_1_percentage" class="form-label">Instalment 1 (%)</label>
-                                            <InputNumber v-model="form.instalment_1_percentage" inputId="instalment_1_percentage" class="w-100" suffix="%" :min="0" :max="100" />
+                                        <div class="col-md-4"
+                                            v-if="form.payment_plan === '3-instalments' || form.payment_plan === '4-instalments'">
+                                            <label for="instalment_1_percentage" class="form-label">Instalment 1
+                                                (%)</label>
+                                            <InputNumber v-model="form.instalment_1_percentage"
+                                                inputId="instalment_1_percentage" class="w-100" suffix="%" :min="0"
+                                                :max="100" :disabled="isReadOnly" />
                                         </div>
                                         <div class="col-md-4" v-if="form.payment_plan === '4-instalments'">
-                                            <label for="instalment_2_percentage" class="form-label">Instalment 2 (%)</label>
-                                            <InputNumber v-model="form.instalment_2_percentage" inputId="instalment_2_percentage" class="w-100" suffix="%" :min="0" :max="100" />
+                                            <label for="instalment_2_percentage" class="form-label">Instalment 2
+                                                (%)</label>
+                                            <InputNumber v-model="form.instalment_2_percentage"
+                                                inputId="instalment_2_percentage" class="w-100" suffix="%" :min="0"
+                                                :max="100" :disabled="isReadOnly" />
                                         </div>
                                     </div>
                                     <div v-if="form.payment_plan === 'full'" class="pt-4 border-top">
                                         <div class="form-check">
-                                            <Checkbox v-model="form.full_payment_paid_now" inputId="full_paid" :binary="true" />
+                                            <Checkbox v-model="form.full_payment_paid_now" inputId="full_paid"
+                                                :binary="true" :disabled="isReadOnly" />
                                             <label for="full_paid" class="ms-2">Paid in Full Now?</label>
                                         </div>
                                     </div>
@@ -431,12 +573,16 @@ const submitForm = async () => {
                                                 <tbody>
                                                     <tr v-for="(payment, index) in form.payments" :key="index">
                                                         <td>{{ payment.type }}</td>
-                                                        <td>{{ payment.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</td>
-                                                        <td>
-                                                            <Calendar v-model="payment.due_date" dateFormat="yy-mm-dd" class="p-inputtext-sm" />
+                                                        <td>{{ payment.amount.toLocaleString('en-US', {
+                                                            minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
                                                         </td>
                                                         <td>
-                                                            <span class="badge" :class="payment.status === 'Paid' ? 'text-bg-success' : 'text-bg-warning'">
+                                                            <Calendar v-model="payment.due_date" dateFormat="yy-mm-dd"
+                                                                class="p-inputtext-sm" :disabled="isReadOnly" />
+                                                        </td>
+                                                        <td>
+                                                            <span class="badge"
+                                                                :class="payment.status === 'Paid' ? 'text-bg-success' : 'text-bg-warning'">
                                                                 {{ payment.status }}
                                                             </span>
                                                         </td>
@@ -454,17 +600,21 @@ const submitForm = async () => {
                                 <div class="row g-3">
                                     <div class="col-md-6">
                                         <label for="enrollment_date" class="form-label">Enrollment Date</label>
-                                        <Calendar v-model="form.enrollment_date" inputId="enrollment_date" dateFormat="yy-mm-dd" class="w-100" />
-                                        <small v-if="errors.enrollment_date" class="text-danger mt-1">{{ errors.enrollment_date }}</small>
+                                        <Calendar v-model="form.enrollment_date" inputId="enrollment_date"
+                                            dateFormat="yy-mm-dd" class="w-100" :disabled="isReadOnly" />
+                                        <small v-if="errors.enrollment_date" class="text-danger mt-1">{{
+                                            errors.enrollment_date }}</small>
                                     </div>
                                     <div class="col-md-6">
                                         <label for="status" class="form-label">Enrollment Status</label>
-                                        <Select v-model="form.status" :options="['Active', 'Completed', 'Cancelled']" placeholder="Select status" class="w-100" />
+                                        <Select v-model="form.status" :options="['Active', 'Completed', 'Cancelled']"
+                                            placeholder="Select status" class="w-100" :disabled="isReadOnly" />
                                         <small v-if="errors.status" class="text-danger mt-1">{{ errors.status }}</small>
                                     </div>
                                     <div class="col-12">
                                         <label for="notes" class="form-label">Notes / Comments</label>
-                                        <Textarea v-model="form.notes" id="notes" rows="3" class="w-100" autoResize />
+                                        <Textarea v-model="form.notes" id="notes" rows="3" class="w-100" autoResize
+                                            :readonly="isReadOnly" />
                                         <small v-if="errors.notes" class="text-danger mt-1">{{ errors.notes }}</small>
                                     </div>
                                 </div>
@@ -472,25 +622,27 @@ const submitForm = async () => {
 
                             <!-- Section 7: Submit -->
                             <div class="pt-4 d-flex justify-content-end">
-                                <Button label="Create Enrollment" icon="pi pi-check" type="submit" :loading="isLoading" class="p-button-success p-button-lg" />
+                                <Button
+  v-if="!isReadOnly"
+  :label="props.mode === 'edit' ? 'Update Enrollment' : 'Create Enrollment'"
+  icon="pi pi-check"
+  type="submit"
+  :loading="isLoading"
+  class="p-button-success p-button-lg"
+/>
                             </div>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
+    </div>
+</div>
     </MainLayout>
 </template>
 
 <style scoped>
-.section-title {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: #212529;
-    padding-bottom: 0.75rem;
-    margin-bottom: 1.5rem;
-    border-bottom: 1px solid #dee2e6;
-}
+
 
 .info-display {
     background-color: #f8f9fa;
@@ -529,7 +681,7 @@ const submitForm = async () => {
 
 :deep(.p-inputtext:focus),
 :deep(.p-select:has(.p-select-label:focus)) {
-    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
+    box-shadow: 0 0 0 0.25rem rgba(0, 110, 253, 0.25) !important;
     border-color: #86b7fe !important;
 }
 
